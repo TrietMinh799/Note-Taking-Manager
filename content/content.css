@@ -1,0 +1,33 @@
+/* 
+ * Academic Notes & Snippet Saver - Host Page Styles
+ * Only used for styles that MUST affect the host page,
+ * like the force unlock indicator banner.
+ * Most extension UI styles are encapsulated in Shadow DOM.
+ */
+
+ .academic-notes-unlock-indicator {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #ef4444; /* red-500 */
+    color: white;
+    padding: 8px 16px;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 0 0 8px 8px;
+    z-index: 2147483647; /* Max z-index */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    pointer-events: none;
+    animation: slideDown 0.3s ease-out forwards;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translate(-50%, -100%);
+    }
+    to {
+        transform: translate(-50%, 0);
+    }
+}

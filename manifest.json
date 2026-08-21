@@ -1,0 +1,71 @@
+{
+  "manifest_version": 3,
+  "name": "Academic Notes - Snippet Saver",
+  "version": "1.0.0",
+  "description": "Save text snippets from academic papers and articles. Export to Obsidian & Zotero with one click.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "permissions": [
+    "storage",
+    "contextMenus",
+    "sidePanel",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content/content.js"
+      ],
+      "css": [
+        "content/content.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    },
+    "default_title": "Academic Notes - Snippet Saver"
+  },
+  "side_panel": {
+    "default_path": "manager/manager.html"
+  },
+  "options_page": "options/options.html",
+  "commands": {
+    "save-snippet": {
+      "suggested_key": {
+        "default": "Alt+S"
+      },
+      "description": "Save selected text"
+    },
+    "toggle-unlock": {
+      "suggested_key": {
+        "default": "Alt+U"
+      },
+      "description": "Toggle force unlock text selection"
+    }
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "academic-notes-snippet-saver@triet.dev",
+      "strict_min_version": "109.0"
+    }
+  }
+}

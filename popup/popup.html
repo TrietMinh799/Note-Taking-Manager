@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academic Notes - Snippet Saver</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="popup-header">
+      <div class="header-brand">
+        <img src="../icons/icon-48.png" alt="Extension Icon" class="header-icon" width="24" height="24">
+        <div class="header-titles">
+          <h1 class="extension-title">Academic Notes</h1>
+          <span class="extension-subtitle">Snippet & Citation Saver</span>
+        </div>
+      </div>
+      <div class="stats-badge" id="stats-badge" title="Total saved snippets">
+        <span class="stats-count" id="stats-count">0</span>
+        <span class="stats-label">notes</span>
+      </div>
+    </header>
+
+    <!-- Stats Banner -->
+    <section class="stats-summary" aria-label="Statistics Summary">
+      <div class="stats-indicator">
+        <span class="status-dot"></span>
+        <span id="stats-summary-text" class="stats-text">0 snippets saved</span>
+      </div>
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="quick-actions" aria-label="Quick Actions">
+      <button type="button" class="btn btn-primary" id="btn-open-manager" title="Open Full Notes Manager in Side Panel or Tab">
+        <svg class="btn-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path>
+          <path d="M6 6h10"></path>
+          <path d="M6 10h10"></path>
+          <path d="M6 14h7"></path>
+        </svg>
+        <span>Open Notes Manager</span>
+      </button>
+
+      <button type="button" class="btn btn-toggle" id="btn-toggle-unlock" aria-pressed="false" title="Bypass copy-paste and text selection restrictions on this tab">
+        <span class="unlock-icon-wrapper" id="unlock-icon-wrapper" aria-hidden="true">
+          <svg class="btn-icon icon-locked" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <svg class="btn-icon icon-unlocked" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+          </svg>
+        </span>
+        <span id="unlock-btn-label">Force Unlock: OFF</span>
+      </button>
+    </section>
+
+    <!-- Recent Notes Section -->
+    <section class="recent-section" aria-label="Recent Notes">
+      <div class="section-header">
+        <h2 class="section-title">Recent Snippets</h2>
+        <span class="section-subtext" id="recent-count-text">Last 3</span>
+      </div>
+
+      <div class="recent-notes-list" id="recent-notes-list" role="list">
+        <!-- Notes rendered dynamically by popup.js -->
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" id="empty-state" hidden>
+        <div class="empty-icon" aria-hidden="true">📑</div>
+        <p class="empty-text">No snippets saved yet.</p>
+        <p class="empty-subtext">Select text on any academic paper or webpage to save your first snippet.</p>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="popup-footer">
+      <div class="footer-shortcuts" title="Extension keyboard shortcuts">
+        <span><kbd>Alt+S</kbd> Save</span>
+        <span class="separator">•</span>
+        <span><kbd>Alt+U</kbd> Unlock</span>
+      </div>
+      <button type="button" class="footer-link-btn" id="link-options" title="Open Extension Settings">
+        <svg class="footer-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span>Options</span>
+      </button>
+    </footer>
+  </div>
+
+  <script src="../utils/obsidian.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

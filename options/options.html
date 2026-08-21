@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - Academic Notes & Snippet Saver</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="options-layout">
+    <!-- Header -->
+    <header class="page-header">
+      <div class="header-main">
+        <img src="../icons/icon-48.png" alt="Extension Logo" class="header-logo" width="36" height="36">
+        <div class="header-text">
+          <h1 class="page-title">Academic Notes Settings</h1>
+          <p class="page-subtitle">Preferences, Obsidian Integration & Data Management</p>
+        </div>
+      </div>
+      <div class="save-status" id="save-status" role="status" aria-live="polite">
+        <span class="status-icon" aria-hidden="true">✓</span>
+        <span class="status-text" id="save-status-text">All changes saved</span>
+      </div>
+    </header>
+
+    <main class="settings-content">
+      <!-- Section 1: Obsidian Settings -->
+      <section class="settings-card" aria-labelledby="heading-obsidian">
+        <div class="card-header">
+          <div class="card-icon obsidian-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <line x1="10" y1="9" x2="8" y2="9"></line>
+            </svg>
+          </div>
+          <div>
+            <h2 id="heading-obsidian" class="card-title">Obsidian Integration</h2>
+            <p class="card-description">Configure automatic formatting and URI links for your Obsidian vault.</p>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <!-- Vault Name -->
+          <div class="form-group">
+            <label for="obsidian-vault" class="form-label">
+              <span>Vault Name</span>
+              <span class="badge-optional">Optional</span>
+            </label>
+            <input type="text" id="obsidian-vault" name="obsidianVault" class="form-input" placeholder="e.g. Research, MyVault" spellcheck="false" autocomplete="off">
+            <p class="form-hint">Used for 1-click export to Obsidian using the <code>obsidian://new</code> protocol.</p>
+          </div>
+
+          <!-- Include YAML Frontmatter -->
+          <div class="form-group">
+            <label class="checkbox-label" for="include-yaml">
+              <input type="checkbox" id="include-yaml" name="includeYamlFrontmatter" class="form-checkbox">
+              <span class="checkbox-custom" aria-hidden="true"></span>
+              <span class="checkbox-text">
+                <strong>Include YAML frontmatter in exports</strong>
+                <span class="checkbox-subtext">Generates structured metadata (title, authors, DOI, date, tags) at the top of exported Markdown notes.</span>
+              </span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: Default Preferences -->
+      <section class="settings-card" aria-labelledby="heading-preferences">
+        <div class="card-header">
+          <div class="card-icon preferences-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="m4.93 4.93 4.24 4.24"></path>
+              <path d="m14.83 9.17 4.24-4.24"></path>
+              <path d="m14.83 14.83 4.24 4.24"></path>
+              <path d="m9.17 14.83-4.24 4.24"></path>
+              <circle cx="12" cy="12" r="4"></circle>
+            </svg>
+          </div>
+          <div>
+            <h2 id="heading-preferences" class="card-title">Default Preferences</h2>
+            <p class="card-description">Set your default highlight colors and quick tag suggestions.</p>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <!-- Default Highlight Color -->
+          <fieldset class="form-group color-fieldset">
+            <legend class="form-label">Default Highlight Color</legend>
+            <div class="color-options-grid" role="radiogroup" aria-label="Default highlight color">
+              <label class="color-radio-card" title="Yellow">
+                <input type="radio" name="defaultColor" value="yellow" class="color-radio-input">
+                <span class="color-circle circle-yellow" aria-hidden="true"></span>
+                <span class="color-name">Yellow</span>
+              </label>
+
+              <label class="color-radio-card" title="Green">
+                <input type="radio" name="defaultColor" value="green" class="color-radio-input">
+                <span class="color-circle circle-green" aria-hidden="true"></span>
+                <span class="color-name">Green</span>
+              </label>
+
+              <label class="color-radio-card" title="Blue">
+                <input type="radio" name="defaultColor" value="blue" class="color-radio-input">
+                <span class="color-circle circle-blue" aria-hidden="true"></span>
+                <span class="color-name">Blue</span>
+              </label>
+
+              <label class="color-radio-card" title="Purple">
+                <input type="radio" name="defaultColor" value="purple" class="color-radio-input">
+                <span class="color-circle circle-purple" aria-hidden="true"></span>
+                <span class="color-name">Purple</span>
+              </label>
+
+              <label class="color-radio-card" title="Orange">
+                <input type="radio" name="defaultColor" value="orange" class="color-radio-input">
+                <span class="color-circle circle-orange" aria-hidden="true"></span>
+                <span class="color-name">Orange</span>
+              </label>
+            </div>
+            <p class="form-hint">Selected automatically when saving snippets via context menu or shortcut.</p>
+          </fieldset>
+
+          <!-- Default Tag Suggestions -->
+          <div class="form-group">
+            <label for="default-tags" class="form-label">Default Tag Suggestions</label>
+            <input type="text" id="default-tags" name="defaultTags" class="form-input" placeholder="theory, methodology, review, key-finding" spellcheck="false">
+            <p class="form-hint">Comma-separated tags suggested in the quick-save modal on web pages.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3: Keyboard Shortcuts -->
+      <section class="settings-card" aria-labelledby="heading-shortcuts">
+        <div class="card-header">
+          <div class="card-icon shortcuts-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
+              <line x1="6" y1="8" x2="6" y2="8"></line>
+              <line x1="10" y1="8" x2="10" y2="8"></line>
+              <line x1="14" y1="8" x2="14" y2="8"></line>
+              <line x1="18" y1="8" x2="18" y2="8"></line>
+              <line x1="6" y1="12" x2="6" y2="12"></line>
+              <line x1="18" y1="12" x2="18" y2="12"></line>
+              <line x1="8" y1="16" x2="16" y2="16"></line>
+            </svg>
+          </div>
+          <div>
+            <h2 id="heading-shortcuts" class="card-title">Keyboard Shortcuts</h2>
+            <p class="card-description">Speed up reading, note taking, and selection unblocking.</p>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="shortcuts-list">
+            <div class="shortcut-item">
+              <div class="shortcut-info">
+                <span class="shortcut-action">Save Selected Snippet</span>
+                <span class="shortcut-desc">Extracts text selection and page metadata into a new note.</span>
+              </div>
+              <div class="shortcut-keys">
+                <kbd>Alt</kbd> + <kbd>S</kbd>
+              </div>
+            </div>
+
+            <div class="shortcut-item">
+              <div class="shortcut-info">
+                <span class="shortcut-action">Force Unlock Text Selection</span>
+                <span class="shortcut-desc">Overrides CSS and JavaScript restrictions preventing text selection.</span>
+              </div>
+              <div class="shortcut-keys">
+                <kbd>Alt</kbd> + <kbd>U</kbd>
+              </div>
+            </div>
+          </div>
+
+          <div class="shortcuts-footer">
+            <button type="button" id="btn-configure-shortcuts" class="btn btn-secondary" title="Open browser shortcut configuration">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+              <span>Customize Shortcuts in Browser</span>
+            </button>
+            <span class="shortcut-hint">You can reassign shortcuts at <code>chrome://extensions/shortcuts</code></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 4: Data Management -->
+      <section class="settings-card" aria-labelledby="heading-data">
+        <div class="card-header">
+          <div class="card-icon data-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </div>
+          <div>
+            <h2 id="heading-data" class="card-title">Data Management & Backup</h2>
+            <p class="card-description">Export, import, or manage your locally stored research snippets.</p>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <!-- Stats Dashboard -->
+          <div class="data-stats-grid">
+            <div class="stat-card">
+              <span class="stat-label">Total Notes</span>
+              <span class="stat-value" id="stat-note-count">0</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Storage Used</span>
+              <span class="stat-value" id="stat-storage-size">0 KB</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Last Export</span>
+              <span class="stat-value" id="stat-last-backup">Never</span>
+            </div>
+          </div>
+
+          <!-- Data Actions -->
+          <div class="data-actions-row">
+            <button type="button" class="btn btn-secondary" id="btn-export-json">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Export All Notes (JSON)</span>
+            </button>
+
+            <button type="button" class="btn btn-secondary" id="btn-import-json">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <span>Import Notes (JSON)</span>
+            </button>
+            <input type="file" id="import-file-input" accept=".json,application/json" hidden>
+
+            <button type="button" class="btn btn-danger-outline" id="btn-clear-notes">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <span>Clear All Notes</span>
+            </button>
+          </div>
+
+          <!-- Clear Confirmation Box (Inline) -->
+          <div class="clear-confirm-box" id="clear-confirm-box" hidden>
+            <div class="confirm-message">
+              <span class="warning-icon" aria-hidden="true">⚠️</span>
+              <div>
+                <strong>Are you absolutely sure?</strong>
+                <p>This will permanently delete all your saved notes and citations. This action cannot be reversed.</p>
+              </div>
+            </div>
+            <div class="confirm-buttons">
+              <button type="button" class="btn btn-secondary" id="btn-clear-cancel">Cancel</button>
+              <button type="button" class="btn btn-danger" id="btn-clear-confirm">Yes, Delete All Notes</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 5: About -->
+      <section class="settings-card about-card" aria-labelledby="heading-about">
+        <div class="card-header">
+          <div class="card-icon about-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+          </div>
+          <div>
+            <h2 id="heading-about" class="card-title">About Academic Notes</h2>
+            <p class="card-description">Scholarly research companion for students, researchers, and writers.</p>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="about-details">
+            <div class="about-row">
+              <span class="about-label">Version</span>
+              <span class="about-value version-badge">1.0.0</span>
+            </div>
+            <div class="about-row">
+              <span class="about-label">Platform</span>
+              <span class="about-value">Manifest V3 • Cross-Browser Compatible</span>
+            </div>
+          </div>
+
+          <div class="disclaimer-callout">
+            <div class="disclaimer-header">
+              <span aria-hidden="true">⚖️</span>
+              <strong>Academic & Legal Disclaimer</strong>
+            </div>
+            <p class="disclaimer-text">
+              This extension is a productivity tool for personal study and research. Users are responsible for adhering to copyright laws and proper academic citations.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Page Footer & Auto-save Notice -->
+    <footer class="page-footer">
+      <div class="footer-status-pill">
+        <span class="footer-dot"></span>
+        <span>Auto-save enabled: Settings update instantly as you type.</span>
+      </div>
+      <button type="button" class="btn btn-primary" id="btn-save-manual">Save Settings</button>
+    </footer>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast" role="alert" aria-live="assertive" hidden></div>
+
+  <script src="options.js"></script>
+</body>
+</html>

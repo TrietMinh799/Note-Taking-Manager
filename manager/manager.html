@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academic Notes Manager</title>
+  <link rel="stylesheet" href="manager.css">
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <div style="display:flex; align-items:center; gap: 0.5rem;">
+        <button id="sidebarToggle" class="icon-btn" aria-label="Toggle Sidebar" style="font-size:1.2rem; padding: 0.25rem 0.5rem;">&#9776;</button>
+        <h1>Academic Notes</h1>
+      </div>
+      <div class="controls">
+        <input type="text" id="searchInput" placeholder="Search notes...">
+        <select id="filterSelect">
+          <option value="all">All Notes</option>
+        </select>
+        <button id="themeToggle" aria-label="Toggle dark mode">&#127769;</button>
+      </div>
+    </div>
+  </header>
+  
+  <div class="layout">
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <h2>Folders</h2>
+        <div style="display: flex; gap: 0.25rem;">
+          <button id="addFolderBtn" class="icon-btn" title="New Folder" aria-label="Add Folder">&#10133;</button>
+        </div>
+      </div>
+      <div id="folderTree" class="folder-tree">
+        <!-- Generated via JS -->
+      </div>
+    </aside>
+
+    <main>
+    <div class="stats-bar" id="statsBar">
+      <span id="notesCount">0 snippets saved</span>
+    </div>
+    
+    <div id="emptyState" class="empty-state hidden">
+      <div class="empty-icon">📝</div>
+      <p>No notes saved yet.</p>
+      <p class="empty-subtext">Select text on a webpage and use the context menu or popup to save snippets.</p>
+    </div>
+    
+    <div id="notesContainer" class="notes-container"></div>
+  </main>
+  </div>
+  <footer class="export-toolbar">
+    <button id="exportMdBtn">Export MD</button>
+    <button id="exportBibtexBtn">Export BibTeX</button>
+    <button id="exportRisBtn">Export RIS</button>
+    <button id="exportJsonBtn">Export JSON</button>
+    <button id="importJsonBtn">Import JSON</button>
+    <input type="file" id="importFileInput" accept=".json" class="hidden">
+  </footer>
+  
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- File Explorer Context Menu -->
+  <div id="explorerContextMenu" class="explorer-context-menu hidden">
+    <div class="context-item" data-action="new-subfolder">
+      <span>➕</span><span>New Subfolder</span>
+    </div>
+    <div class="context-item" data-action="new-root-folder">
+      <span>📁</span><span>New Folder</span>
+    </div>
+    <div class="context-item" data-action="copy-path">
+      <span>📋</span><span>Copy Path</span>
+    </div>
+    <div class="context-item" data-action="copy-name">
+      <span>📄</span><span>Copy Name</span>
+    </div>
+    <div class="context-divider"></div>
+    <div class="context-item" data-action="rename-folder">
+      <span>✏️</span><span>Rename</span>
+    </div>
+    <div class="context-item danger" data-action="delete-folder">
+      <span>🗑️</span><span>Delete Folder</span>
+    </div>
+  </div>
+
+  <!-- Load Utils -->
+  <script src="../utils/storage.js"></script>
+  <script src="../utils/obsidian.js"></script>
+  <script src="../utils/zotero.js"></script>
+  <script src="manager.js"></script>
+</body>
+</html>
