@@ -41,18 +41,31 @@
   - **Timestamp & Direct URL Link**
 - Specially tuned for academic sources including *arXiv, PubMed, Nature, IEEE Xplore, ScienceDirect, ACM, Springer, Wiley, MDPI, bioRxiv, PLOS, JSTOR*, and standard web pages.
 
-### 💎 5. Seamless Obsidian & Zotero Export
+### 💎 5. Multi-App Export Ecosystem (Obsidian, Notion, Logseq, Bear, Anki & More)
 - **Obsidian**:
   - **Callout Format**: Generates standard `> [!quote]` Markdown blocks formatted with page titles and direct links.
   - **YAML Frontmatter**: Includes metadata header (`title`, `authors`, `doi`, `date_saved`, `tags`).
   - **Send via `obsidian://`**: One-click deep link opens directly in your desktop Obsidian vault.
-- **Zotero**:
+- **Notion**:
+  - **Notion Callouts (`> 💡 **Title**`)**: Pastes as native Notion callout blocks with matching color emojis.
+  - **Database Properties**: Exports structured property lists (URL, Authors, DOI, Tags, Commentary).
+- **Logseq**:
+  - **Outliner Blocks & Properties**: Generates block hierarchies with page properties (`title::`, `authors::`, `doi::`, `date::`, `[[wikilinks]]`).
+  - **Send via `logseq://`**: Deep link to create and append directly to your Logseq graph.
+- **Anki (Spaced Repetition Flashcards)**:
+  - **1-Click Card Copy**: Generates formatted Front (Question/Prompt) and Back (Quote + Citation) for quick addition to Anki.
+  - **Bulk Deck Export (`.tsv`)**: Export all notes to a Tab-Separated Values file for 1-click Anki Deck import.
+- **Bear App**:
+  - **Bear Markdown & `#tags`**: Nested `#academic/tag` structure and direct `bear://` create links.
+- **Zotero & Academic Reference Managers**:
   - **1-Click BibTeX (`@article` / `@misc`)**: Generates cite keys and formatted BibTeX entries.
   - **1-Click RIS Format**: Generates standardized RIS citation strings (`TY`, `TI`, `AU`, `DO`, `UR`, `N1`).
-  - *Tip:* Press `Ctrl + Shift + V` in Zotero ("Import from Clipboard") to import citations immediately.
+  - **EndNote & Mendeley (`.enw`)**: Standardized tagged format (`%0`, `%T`, `%A`, `%J`, `%D`, `%U`, `%K`, `%Z`).
+- **Rich-Text for Google Docs, Word & OneNote**:
+  - **Formatted HTML Copy**: Pastes seamlessly into Google Docs, Microsoft Word, OneNote, or Apple Notes with intact headings, hyperlinks, and blockquotes.
 - **Bulk Export & Import**:
-  - Download all notes as `.md`, `.bib`, `.ris`, or `.json` files.
-  - Full JSON backup and restore capabilities with automatic deduplication.
+  - Download all notes as `.md`, `.tsv` (Anki), `.bib`, `.ris`, `.enw`, `.db` (SQLite), or `.json` files.
+  - Full backup and restore capabilities with automatic deduplication.
 
 ### 💾 6. SQLite WebAssembly (WASM) Local Database Engine
 - **Full Relational SQLite Database**: Powered by WebAssembly SQLite (`sql.js`) with persistent binary storage.

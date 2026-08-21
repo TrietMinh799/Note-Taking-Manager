@@ -585,11 +585,48 @@ function createNoteCard(note) {
     kebabDropdown.appendChild(item);
   };
 
-  addItem('📋', 'Copy Markdown (Obsidian)', () => {
+  const addSectionHeader = (title) => {
+    const header = document.createElement('div');
+    header.className = 'kebab-section-header';
+    header.style.cssText = 'font-size: 0.7rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted); padding: 4px 10px; margin-top: 4px; letter-spacing: 0.5px;';
+    header.textContent = title;
+    kebabDropdown.appendChild(header);
+  };
+
+  // Section 1: Markdown & Notes
+  addSectionHeader('Copy to Note Apps');
+  addItem('💎', 'Copy Obsidian Callout', () => {
     const text = window.AcademicNotes?.Obsidian?.generateCallout(note) || generateFallbackMD(note);
-    copyToClipboard(text, 'Markdown copied!');
+    copyToClipboard(text, 'Obsidian Callout copied!');
   });
 
+  addItem('💡', 'Copy Notion Callout', () => {
+    const text = window.AcademicNotes?.Notion?.generateCallout(note) || generateFallbackMD(note);
+    copyToClipboard(text, 'Notion Callout copied!');
+  });
+
+  addItem('🌲', 'Copy Logseq Block', () => {
+    const text = window.AcademicNotes?.Logseq?.generateBlock(note) || generateFallbackMD(note);
+    copyToClipboard(text, 'Logseq Block copied!');
+  });
+
+  addItem('🐻', 'Copy Bear Markdown', () => {
+    const text = window.AcademicNotes?.Bear?.generateContent(note) || generateFallbackMD(note);
+    copyToClipboard(text, 'Bear Markdown copied!');
+  });
+
+  addItem('🎴', 'Copy Anki Card (TSV)', () => {
+    if (!window.AcademicNotes?.Anki) return showToast('Anki utility not loaded');
+    const card = window.AcademicNotes.Anki.generateCard(note);
+    copyToClipboard(card.tsv, 'Anki Flashcard copied! Paste into Anki.');
+  });
+
+  addItem('📋', 'Copy Rich-Text (Docs/OneNote)', () => {
+    copyRichText(note);
+  });
+
+  // Section 2: Direct App Launch
+  addSectionHeader('Open in App');
   addItem('🚀', 'Send to Obsidian', () => {
     chrome.storage.local.get(['obsidianVault'], (res) => {
       const vault = res.obsidianVault || '';
@@ -605,6 +642,14 @@ function createNoteCard(note) {
     });
   });
 
+  addItem('🐻', 'Send to Bear', () => {
+    if (window.AcademicNotes?.Bear) {
+      window.location.href = window.AcademicNotes.Bear.generateBearUri(note);
+    }
+  });
+
+  // Section 3: Citations & Bibliography
+  addSectionHeader('Citations & Biblio');
   addItem('📑', 'Copy BibTeX (Zotero)', () => {
     const text = window.AcademicNotes?.Zotero?.generateBibTeX(note) || 'No BibTeX utility found';
     copyToClipboard(text, 'BibTeX copied!');
@@ -613,6 +658,11 @@ function createNoteCard(note) {
   addItem('📄', 'Copy RIS (Zotero)', () => {
     const text = window.AcademicNotes?.Zotero?.generateRIS(note) || 'No RIS utility found';
     copyToClipboard(text, 'RIS copied!');
+  });
+
+  addItem('📚', 'Copy EndNote (.enw)', () => {
+    const text = window.AcademicNotes?.EndNote?.generateRecord(note) || 'No EndNote utility found';
+    copyToClipboard(text, 'EndNote record copied!');
   });
 
   // Divider
@@ -1082,6 +1132,16 @@ function setupEventListeners() {
     downloadFile('academic-notes.md', md, 'text/markdown');
   });
 
+  const exportAnkiBtn = document.getElementById('exportAnkiBtn');
+  if (exportAnkiBtn) {
+    exportAnkiBtn.addEventListener('click', () => {
+      if (!window.AcademicNotes?.Anki) return showToast('Anki utility not loaded');
+      const tsv = window.AcademicNotes.Anki.generateDeckTSV(allNotes);
+      downloadFile('academic-notes-anki.tsv', tsv, 'text/tab-separated-values');
+      showToast('Anki Deck exported (.tsv)!');
+    });
+  }
+
   document.getElementById('exportBibtexBtn').addEventListener('click', () => {
     if (!window.AcademicNotes?.Zotero) return showToast('Zotero utility not loaded');
     let bib = '';
@@ -1099,6 +1159,16 @@ function setupEventListeners() {
     });
     downloadFile('academic-notes.ris', ris, 'application/x-research-info-systems');
   });
+
+  const exportEndnoteBtn = document.getElementById('exportEndnoteBtn');
+  if (exportEndnoteBtn) {
+    exportEndnoteBtn.addEventListener('click', () => {
+      if (!window.AcademicNotes?.EndNote) return showToast('EndNote utility not loaded');
+      const enw = window.AcademicNotes.EndNote.generateBatch(allNotes);
+      downloadFile('academic-notes.enw', enw, 'application/x-endnote-refer');
+      showToast('EndNote records exported (.enw)!');
+    });
+  }
 
   document.getElementById('exportJsonBtn').addEventListener('click', () => {
     downloadFile('academic-notes.json', JSON.stringify(allNotes, null, 2), 'application/json');
@@ -1216,4 +1286,38 @@ function relativeTime(isoDate) {
   if (diffInSeconds < 172800) return 'Yesterday';
   
   return date.toLocaleDateString();
+}
+
+async function copyRichText(note) {
+  const title = note.title || note.pageTitle || 'Untitled Academic Note';
+  const content = (note.content || note.text || '').replace(/\n/g, '<br>');
+  const url = note.url || note.pageUrl || '';
+  const authors = Array.isArray(note.authors) ? note.authors.join(', ') : (note.authors || '');
+  const userNote = (note.userNote || note.userNotes || '');
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; color: #111;">
+      <h3 style="margin-bottom: 4px; font-size: 1.1em;"><a href="${url}" style="color: #2563eb; text-decoration: none;">${title}</a></h3>
+      ${authors ? `<p style="color: #666; font-size: 0.9em; margin-top: 0; margin-bottom: 8px;"><em>by ${authors}</em></p>` : ''}
+      <blockquote style="border-left: 3px solid #2563eb; padding-left: 12px; margin: 8px 0; color: #222; font-style: italic;">
+        "${content}"
+      </blockquote>
+      ${userNote ? `<p style="margin-top: 8px; color: #333;"><strong>My Note:</strong> <em>${userNote}</em></p>` : ''}
+    </div>
+  `;
+  const plainText = `"${note.content || ''}"\n— ${title} (${url})`;
+
+  try {
+    const blobHtml = new Blob([html], { type: 'text/html' });
+    const blobText = new Blob([plainText], { type: 'text/plain' });
+    await navigator.clipboard.write([
+      new ClipboardItem({
+        'text/html': blobHtml,
+        'text/plain': blobText
+      })
+    ]);
+    showToast('Copied Formatted Rich-Text (ready for Docs/Word/OneNote)!');
+  } catch (err) {
+    copyToClipboard(plainText, 'Copied Plain Text!');
+  }
 }

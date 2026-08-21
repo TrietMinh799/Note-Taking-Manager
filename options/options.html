@@ -87,6 +87,22 @@
         </div>
 
         <div class="card-body">
+          <!-- Primary Note App -->
+          <div class="form-group">
+            <label for="primary-app" class="form-label">
+              <span>Primary Note-Taking App</span>
+            </label>
+            <select id="primary-app" name="primaryApp" class="form-input" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); font-size: 14px;">
+              <option value="obsidian">💎 Obsidian (Markdown Callouts & obsidian://)</option>
+              <option value="notion">💡 Notion (Notion Callouts & Properties)</option>
+              <option value="logseq">🌲 Logseq (Outliner blocks & Properties)</option>
+              <option value="bear">🐻 Bear (Bear Markdown & bear://)</option>
+              <option value="anki">🎴 Anki (Flashcards & TSV)</option>
+              <option value="generic">📋 Generic Rich-Text (Docs / Word / OneNote)</option>
+            </select>
+            <p class="form-hint">Sets the default 1-click export format across popups and actions.</p>
+          </div>
+
           <!-- Default Highlight Color -->
           <fieldset class="form-group color-fieldset">
             <legend class="form-label">Default Highlight Color</legend>

@@ -53,10 +53,12 @@
   <footer class="export-toolbar">
     <button id="exportSqliteBtn" style="background-color: var(--accent); color: white; font-weight: 600;">💾 Export SQLite (.db)</button>
     <button id="exportMdBtn">Export MD</button>
+    <button id="exportAnkiBtn" title="Export as Anki Flashcards Deck (.tsv)">🎴 Export Anki</button>
     <button id="exportBibtexBtn">Export BibTeX</button>
     <button id="exportRisBtn">Export RIS</button>
+    <button id="exportEndnoteBtn">Export EndNote</button>
     <button id="exportJsonBtn">Export JSON</button>
-    <button id="importJsonBtn">Import JSON</button>
+    <button id="importJsonBtn">Import</button>
     <input type="file" id="importFileInput" accept=".json,.db,.sqlite" class="hidden">
   </footer>
   
@@ -85,11 +87,16 @@
     </div>
   </div>
 
-  <!-- Load SQLite WASM & Utils -->
+  <!-- Load SQLite WASM & Multi-App Utils -->
   <script src="../lib/sql-wasm.js"></script>
   <script src="../utils/db.js"></script>
   <script src="../utils/storage.js"></script>
   <script src="../utils/obsidian.js"></script>
+  <script src="../utils/notion.js"></script>
+  <script src="../utils/logseq.js"></script>
+  <script src="../utils/anki.js"></script>
+  <script src="../utils/endnote.js"></script>
+  <script src="../utils/bear.js"></script>
   <script src="../utils/zotero.js"></script>
   <script src="manager.js"></script>
 </body>

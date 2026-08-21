@@ -37,6 +37,11 @@ jobs:
           node -c utils/storage.js
           node -c utils/metadata.js
           node -c utils/obsidian.js
+          node -c utils/notion.js
+          node -c utils/logseq.js
+          node -c utils/anki.js
+          node -c utils/endnote.js
+          node -c utils/bear.js
           node -c utils/zotero.js
           node -c background/service-worker.js
           node -c content/content.js

@@ -10,6 +10,7 @@ const SETTINGS_KEY = 'academic_settings';
 const NOTES_KEY = 'academic_notes';
 
 const DEFAULT_SETTINGS = {
+  primaryApp: 'obsidian',
   obsidianVault: 'Notes',
   includeYamlFrontmatter: true,
   defaultColor: 'yellow',
@@ -48,10 +49,15 @@ async function initializeOptions() {
  * Binds change and input events to all configuration inputs for debounced auto-save
  */
 function bindFormInputs() {
+  const primaryAppSelect = document.getElementById('primary-app');
   const vaultInput = document.getElementById('obsidian-vault');
   const yamlCheckbox = document.getElementById('include-yaml');
   const colorRadios = document.querySelectorAll('input[name="defaultColor"]');
   const defaultTagsInput = document.getElementById('default-tags');
+
+  if (primaryAppSelect) {
+    primaryAppSelect.addEventListener('change', scheduleAutoSave);
+  }
 
   if (vaultInput) {
     vaultInput.addEventListener('input', scheduleAutoSave);
@@ -108,13 +114,13 @@ function bindActionButtons() {
 
   if (btnClearNotes) {
     btnClearNotes.addEventListener('click', () => {
-      showClearConfirmation(true);
+      toggleClearConfirmation(true);
     });
   }
 
   if (btnClearCancel) {
     btnClearCancel.addEventListener('click', () => {
-      showClearConfirmation(false);
+      toggleClearConfirmation(false);
     });
   }
 
@@ -130,6 +136,12 @@ async function loadAndPopulateSettings() {
   try {
     const data = await chrome.storage.local.get(SETTINGS_KEY);
     currentSettings = { ...DEFAULT_SETTINGS, ...(data[SETTINGS_KEY] || {}) };
+
+    // Primary App
+    const primaryAppSelect = document.getElementById('primary-app');
+    if (primaryAppSelect) {
+      primaryAppSelect.value = currentSettings.primaryApp || 'obsidian';
+    }
 
     // Vault Name
     const vaultInput = document.getElementById('obsidian-vault');
@@ -180,6 +192,7 @@ function scheduleAutoSave() {
  */
 async function saveSettingsFromForm(showToastFlag = false) {
   try {
+    const primaryAppSelect = document.getElementById('primary-app');
     const vaultInput = document.getElementById('obsidian-vault');
     const yamlCheckbox = document.getElementById('include-yaml');
     const checkedColorRadio = document.querySelector('input[name="defaultColor"]:checked');
@@ -187,6 +200,7 @@ async function saveSettingsFromForm(showToastFlag = false) {
 
     const updatedSettings = {
       ...currentSettings,
+      primaryApp: primaryAppSelect ? primaryAppSelect.value : DEFAULT_SETTINGS.primaryApp,
       obsidianVault: vaultInput ? vaultInput.value.trim() : DEFAULT_SETTINGS.obsidianVault,
       includeYamlFrontmatter: yamlCheckbox ? yamlCheckbox.checked : DEFAULT_SETTINGS.includeYamlFrontmatter,
       defaultColor: checkedColorRadio ? checkedColorRadio.value : DEFAULT_SETTINGS.defaultColor,

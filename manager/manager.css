@@ -593,7 +593,9 @@ main {
   position: absolute;
   right: 0;
   top: calc(100% + 4px);
-  min-width: 220px;
+  min-width: 230px;
+  max-height: 400px;
+  overflow-y: auto;
   background-color: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
