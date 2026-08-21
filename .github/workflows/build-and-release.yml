@@ -45,6 +45,19 @@ jobs:
           node -c options/options.js
           echo "All JS syntax is valid!"
 
+      - name: Ensure SQLite WASM Assets
+        run: |
+          mkdir -p lib
+          if [ ! -f lib/sql-wasm.js ]; then
+            echo "Downloading sql-wasm.js..."
+            curl -sL https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.12.0/sql-wasm.js -o lib/sql-wasm.js
+          fi
+          if [ ! -f lib/sql-wasm.wasm ]; then
+            echo "Downloading sql-wasm.wasm..."
+            curl -sL https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.12.0/sql-wasm.wasm -o lib/sql-wasm.wasm
+          fi
+          ls -la lib/
+
       - name: Validate Manifest & Required Assets
         id: manifest
         run: |
