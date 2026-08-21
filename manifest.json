@@ -10,10 +10,22 @@
   },
   "permissions": [
     "storage",
+    "unlimitedStorage",
     "contextMenus",
     "sidePanel",
     "activeTab",
     "scripting"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "lib/sql-wasm.wasm",
+        "lib/sql-wasm.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
   ],
   "host_permissions": [
     "<all_urls>"

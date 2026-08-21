@@ -73,6 +73,26 @@ window.AcademicNotes.Obsidian = (function() {
       uri.searchParams.append('content', content);
       
       return uri.toString();
+    },
+
+    sendToObsidian(note, vaultName) {
+      const fullNote = this.generateFullNote(note);
+      // If note exceeds standard OS protocol URI limit (~2000 chars), fallback to clipboard + open
+      if (fullNote.length > 2000) {
+        navigator.clipboard.writeText(fullNote).then(() => {
+          const vaultParam = vaultName ? `?vault=${encodeURIComponent(vaultName)}` : '';
+          window.location.href = `obsidian://open${vaultParam}`;
+          if (typeof showToast === 'function') {
+            showToast('Large note: copied to clipboard! Paste directly in Obsidian.');
+          }
+        }).catch(() => {
+          const uri = this.generateObsidianUri(note, vaultName);
+          window.location.href = uri;
+        });
+      } else {
+        const uri = this.generateObsidianUri(note, vaultName);
+        window.location.href = uri;
+      }
     }
   };
 })();

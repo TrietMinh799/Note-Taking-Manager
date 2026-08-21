@@ -54,7 +54,13 @@
   - Download all notes as `.md`, `.bib`, `.ris`, or `.json` files.
   - Full JSON backup and restore capabilities with automatic deduplication.
 
-### 🖥️ 6. Desktop & Side-Panel Split View Architecture
+### 💾 6. SQLite WebAssembly (WASM) Local Database Engine
+- **Full Relational SQLite Database**: Powered by WebAssembly SQLite (`sql.js`) with persistent binary storage.
+- **Sub-Millisecond Full-Text Search (FTS5)**: Instant search indexing across massive articles and long snippets without UI lag.
+- **1-Click `.db` SQLite Export**: Download your full `academic_notes.db` database to open in *DB Browser for SQLite*, *DBeaver*, or analyze via Python scripts (`import sqlite3`).
+- **Raw Database Restore**: Import existing `.db` or `.sqlite` files directly into the extension.
+
+### 🖥️ 7. Desktop & Side-Panel Split View Architecture
 - **Split-Pane Layout**: The left File Explorer sidebar remains pinned in place while you scroll through notes on the right—no double scrollbars or wasted whitespace.
 - **3-Dot Kebab Menu (`⋮`)**: Clean note card headers with integrated dropdown actions for sharing, exporting, editing, and deleting.
 - **50-Word Preview & Hover Tooltip**: Card snippets display a clean 50-word preview with an interactive hover tooltip showing the full passage.

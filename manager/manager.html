@@ -51,12 +51,13 @@
   </main>
   </div>
   <footer class="export-toolbar">
+    <button id="exportSqliteBtn" style="background-color: var(--accent); color: white; font-weight: 600;">💾 Export SQLite (.db)</button>
     <button id="exportMdBtn">Export MD</button>
     <button id="exportBibtexBtn">Export BibTeX</button>
     <button id="exportRisBtn">Export RIS</button>
     <button id="exportJsonBtn">Export JSON</button>
     <button id="importJsonBtn">Import JSON</button>
-    <input type="file" id="importFileInput" accept=".json" class="hidden">
+    <input type="file" id="importFileInput" accept=".json,.db,.sqlite" class="hidden">
   </footer>
   
   <div id="toast" class="toast hidden"></div>
@@ -84,7 +85,9 @@
     </div>
   </div>
 
-  <!-- Load Utils -->
+  <!-- Load SQLite WASM & Utils -->
+  <script src="../lib/sql-wasm.js"></script>
+  <script src="../utils/db.js"></script>
   <script src="../utils/storage.js"></script>
   <script src="../utils/obsidian.js"></script>
   <script src="../utils/zotero.js"></script>

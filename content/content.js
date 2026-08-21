@@ -334,7 +334,13 @@
       if (text.length > 0) {
         selectedText = text;
         const range = selection.getRangeAt(0);
-        selectionRect = range.getBoundingClientRect();
+        const rects = range.getClientRects();
+        if (rects.length > 0) {
+          // Use the last rect where selection ended (near cursor/touch)
+          selectionRect = rects[rects.length - 1];
+        } else {
+          selectionRect = range.getBoundingClientRect();
+        }
         
         showFAB();
       } else {
@@ -413,7 +419,7 @@
     // Metadata preview
     const metaPreview = document.createElement('div');
     metaPreview.className = 'metadata-preview';
-    metaPreview.textContent = \`From: \${metadata.title} (\${metadata.domain})\`;
+    metaPreview.textContent = `From: ${metadata.title} (${metadata.domain})`;
     modal.appendChild(metaPreview);
     
     // Notes input
@@ -491,7 +497,7 @@
     
     colors.forEach(color => {
       const btn = document.createElement('button');
-      btn.className = \`color-btn color-\${color} \${color === selectedColor ? 'selected' : ''}\`;
+      btn.className = `color-btn color-${color} ${color === selectedColor ? 'selected' : ''}`;
       btn.title = color;
       btn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -661,14 +667,14 @@
       if (!styleEl) {
         styleEl = document.createElement('style');
         styleEl.id = UNLOCK_STYLE_ID;
-        styleEl.textContent = \`
+        styleEl.textContent = `
           * {
             user-select: text !important;
             -webkit-user-select: text !important;
             -moz-user-select: text !important;
             pointer-events: auto !important;
           }
-        \`;
+        `;
         document.head.appendChild(styleEl);
       }
       

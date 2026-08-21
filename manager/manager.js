@@ -12,6 +12,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function loadFolders() {
+  if (window.AcademicNotes?.DB) {
+    try {
+      allFolders = await window.AcademicNotes.DB.getAllFolders();
+      renderFolderTree();
+      return;
+    } catch (e) {
+      console.warn('SQLite DB loadFolders failed, fallback to background:', e);
+    }
+  }
   return new Promise((resolve) => {
     chrome.runtime.sendMessage({ type: "GET_FOLDERS" }, (response) => {
       if (response && response.success) {
@@ -371,6 +380,21 @@ function initTheme() {
 
 // Load and Render
 async function loadNotes() {
+  if (window.AcademicNotes?.DB) {
+    try {
+      allNotes = await window.AcademicNotes.DB.getAllNotes();
+      allNotes.forEach(n => {
+        n._searchTokens = `${n.content || ''} ${n.title || ''} ${n.userNote || ''} ${(n.tags || []).join(' ')}`.toLowerCase();
+      });
+      filteredNotes = [...allNotes];
+      renderFolderTree();
+      applyFilters();
+      return;
+    } catch (e) {
+      console.warn('SQLite DB loadNotes failed, fallback to background:', e);
+    }
+  }
+
   return new Promise((resolve) => {
     chrome.runtime.sendMessage({ type: "GET_NOTES" }, (response) => {
       if (response && response.success) {
@@ -380,6 +404,9 @@ async function loadNotes() {
           const dateA = new Date(a.createdAt || a.timestamp || a.date || 0).getTime();
           const dateB = new Date(b.createdAt || b.timestamp || b.date || 0).getTime();
           return dateB - dateA;
+        });
+        allNotes.forEach(n => {
+          n._searchTokens = `${n.content || ''} ${n.title || ''} ${n.userNote || ''} ${(n.tags || []).join(' ')}`.toLowerCase();
         });
         filteredNotes = [...allNotes];
         renderFolderTree();
@@ -392,10 +419,10 @@ async function loadNotes() {
 
 chrome.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === 'local') {
-    if (changes.academic_notes && !document.querySelector('.edit-form')) {
+    if ((changes.academic_notes || changes.sqlite_last_updated) && !document.querySelector('.edit-form')) {
       loadNotes();
     }
-    if (changes.academic_folders) {
+    if (changes.academic_folders || changes.sqlite_last_updated) {
       loadFolders();
     }
   }
@@ -423,12 +450,16 @@ function renderNotes(notes) {
 
 function format50Words(text) {
   if (!text) return '';
-  const trimmed = text.trim();
-  const words = trimmed.split(/\s+/);
+  // O(1) performance optimization for very long text
+  const previewChunk = text.slice(0, 1500).trim();
+  const words = previewChunk.split(/\s+/);
   if (words.length > 50) {
     return words.slice(0, 50).join(' ') + '...';
   }
-  return trimmed;
+  if (text.length > 1500) {
+    return words.join(' ') + '...';
+  }
+  return text.trim();
 }
 
 function createNoteCard(note) {
@@ -841,7 +872,7 @@ function populateFilters() {
 }
 
 function applyFilters() {
-  const query = document.getElementById('searchInput').value.toLowerCase();
+  const query = document.getElementById('searchInput').value.toLowerCase().trim();
   const filterVal = document.getElementById('filterSelect').value;
 
   filteredNotes = allNotes.filter(note => {
@@ -853,13 +884,19 @@ function applyFilters() {
       }
     }
 
-    // text search
-    const content = (note.content || note.text || '').toLowerCase();
-    const title = (note.title || note.pageTitle || note.metadata?.title || '').toLowerCase();
-    const userNote = (note.userNote || note.userNotes || '').toLowerCase();
-    const textMatch = !query || content.includes(query) || title.includes(query) || userNote.includes(query);
-    
-    if (!textMatch) return false;
+    // High-performance token search
+    if (query) {
+      if (note._searchTokens) {
+        if (!note._searchTokens.includes(query)) return false;
+      } else {
+        const content = (note.content || note.text || '').toLowerCase();
+        const title = (note.title || note.pageTitle || note.metadata?.title || '').toLowerCase();
+        const userNote = (note.userNote || note.userNotes || '').toLowerCase();
+        if (!content.includes(query) && !title.includes(query) && !userNote.includes(query)) {
+          return false;
+        }
+      }
+    }
 
     // dropdown filter
     if (filterVal === 'all') return true;
@@ -915,7 +952,7 @@ function setupEventListeners() {
   });
 
   const searchInput = document.getElementById('searchInput');
-  searchInput.addEventListener('input', debounce(applyFilters, 300));
+  searchInput.addEventListener('input', debounce(applyFilters, 250));
   
   const filterSelect = document.getElementById('filterSelect');
   filterSelect.addEventListener('change', applyFilters);
@@ -990,6 +1027,32 @@ function setupEventListeners() {
   }
 
   // Exports
+  const exportSqliteBtn = document.getElementById('exportSqliteBtn');
+  if (exportSqliteBtn) {
+    exportSqliteBtn.addEventListener('click', async () => {
+      if (window.AcademicNotes?.DB) {
+        try {
+          showToast('Generating SQLite .db...');
+          const binary = await window.AcademicNotes.DB.exportDatabaseBinary();
+          const blob = new Blob([binary], { type: 'application/x-sqlite3' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'academic_notes.db';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showToast('SQLite Database exported (.db)');
+          return;
+        } catch (e) {
+          console.error('Failed to export SQLite db:', e);
+        }
+      }
+      showToast('SQLite database is initializing...');
+    });
+  }
+
   document.getElementById('exportMdBtn').addEventListener('click', () => {
     if (!window.AcademicNotes?.Obsidian) return showToast('Obsidian utility not loaded');
     let md = '';
@@ -1030,16 +1093,37 @@ function setupEventListeners() {
     const file = e.target.files[0];
     if (!file) return;
 
+    if (file.name.endsWith('.db') || file.name.endsWith('.sqlite')) {
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        try {
+          const uint8 = new Uint8Array(ev.target.result);
+          if (window.AcademicNotes?.DB) {
+            await window.AcademicNotes.DB.importDatabaseBinary(uint8);
+            showToast('SQLite Database restored successfully!');
+            await loadFolders();
+            await loadNotes();
+          }
+        } catch (err) {
+          console.error('Failed to import SQLite db:', err);
+          showToast('Failed to import SQLite .db file');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+      e.target.value = '';
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (ev) => {
       try {
         const imported = JSON.parse(ev.target.result);
         if (Array.isArray(imported)) {
-          // Send to background to merge
-          chrome.runtime.sendMessage({ type: "IMPORT_NOTES", data: imported }, (res) => {
+          chrome.runtime.sendMessage({ type: "IMPORT_NOTES", data: imported }, async (res) => {
             if (res && res.success) {
               showToast(`Imported ${imported.length} notes`);
-              loadNotes();
+              await loadFolders();
+              await loadNotes();
             }
           });
         }
