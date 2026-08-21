@@ -122,7 +122,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: "Release v${{ steps.manifest.outputs.version }}"
-          files: ${{ env.PACKAGE_PATH }}
+          files: dist/academic-notes-v${{ steps.manifest.outputs.version }}.zip
           generate_release_notes: true
           draft: false
           prerelease: false
