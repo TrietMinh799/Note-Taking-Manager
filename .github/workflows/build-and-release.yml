@@ -75,10 +75,16 @@ jobs:
           if (!fs.existsSync('lib/sql-wasm.js')) throw new Error('Missing lib/sql-wasm.js');
           if (!fs.existsSync('icons/icon-128.png')) throw new Error('Missing icons');
           console.log('VERSION=' + manifest.version);
+          // Export as environment variable for subsequent steps
           fs.appendFileSync(process.env.GITHUB_ENV, 'EXT_VERSION=' + manifest.version + '\n');
+          // Also set step output so other workflow expressions can access the version safely
+          if (process.env.GITHUB_OUTPUT) {
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, 'version=' + manifest.version + '\n');
+          }
           "
 
       - name: Package Extension ZIP
+        id: package
         run: |
           mkdir -p dist
           ZIP_NAME="academic-notes-v${EXT_VERSION}.zip"
@@ -99,19 +105,23 @@ jobs:
             -x "*.DS_Store" "*.git*" "*__pycache__*"
 
           echo "PACKAGE_PATH=dist/${ZIP_NAME}" >> $GITHUB_ENV
+          # Also expose the package path as a step output so it can be safely referenced
+          if [ -n "$GITHUB_OUTPUT" ]; then
+            echo "package_path=dist/${ZIP_NAME}" >> "$GITHUB_OUTPUT"
+          fi
           echo "ZIP created successfully: dist/${ZIP_NAME}"
 
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: academic-notes-extension-v${{ env.EXT_VERSION }}
+          name: academic-notes-extension-v${{ steps.manifest.outputs.version }}
           path: dist/
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          name: "Release v${{ env.EXT_VERSION }}"
+          name: "Release v${{ steps.manifest.outputs.version }}"
           files: ${{ env.PACKAGE_PATH }}
           generate_release_notes: true
           draft: false
