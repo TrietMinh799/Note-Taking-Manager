@@ -282,24 +282,36 @@ function closeExplorerContextMenu() {
   if (menu) menu.classList.add('hidden');
 }
 
+function normalizeFolderPath(path) {
+  if (!path) return '';
+  return path.split('/').map(p => p.trim()).filter(Boolean).join('/');
+}
+
 function addFolder(folderPath) {
-  if (!folderPath || !folderPath.trim()) return;
-  chrome.runtime.sendMessage({ type: "ADD_FOLDER", folder: folderPath.trim() }, async (res) => {
+  const clean = normalizeFolderPath(folderPath);
+  if (!clean) return;
+  chrome.runtime.sendMessage({ type: "ADD_FOLDER", folder: clean }, async (res) => {
     if (res && res.success) {
-      showToast(`Folder "${folderPath.trim()}" created`);
-      expandedFolders.add(folderPath.trim());
+      if (window.AcademicNotes?.DB) {
+        await window.AcademicNotes.DB.addFolder(clean);
+      }
+      showToast(`Folder "${clean}" created`);
       await loadFolders();
     }
   });
 }
 
 function renameFolder(oldPath, newPath) {
-  if (!oldPath || !newPath || oldPath === newPath) return;
-  chrome.runtime.sendMessage({ type: "RENAME_FOLDER", oldFolder: oldPath, newFolder: newPath }, async (res) => {
+  const cleanNew = normalizeFolderPath(newPath);
+  if (!oldPath || !cleanNew || oldPath === cleanNew) return;
+  chrome.runtime.sendMessage({ type: "RENAME_FOLDER", oldFolder: oldPath, newFolder: cleanNew }, async (res) => {
     if (res && res.success) {
-      showToast(`Renamed to "${newPath}"`);
+      if (window.AcademicNotes?.DB) {
+        await window.AcademicNotes.DB.renameFolder(oldPath, cleanNew);
+      }
+      showToast(`Renamed to "${cleanNew}"`);
       if (currentFolder === oldPath || currentFolder.startsWith(oldPath + '/')) {
-        currentFolder = newPath + currentFolder.slice(oldPath.length);
+        currentFolder = cleanNew + currentFolder.slice(oldPath.length);
       }
       await loadFolders();
       await loadNotes();
@@ -311,6 +323,9 @@ function deleteFolder(folderPath) {
   if (!folderPath || folderPath === 'Inbox') return;
   chrome.runtime.sendMessage({ type: "DELETE_FOLDER", folder: folderPath }, async (res) => {
     if (res && res.success) {
+      if (window.AcademicNotes?.DB) {
+        await window.AcademicNotes.DB.deleteFolder(folderPath);
+      }
       if (currentFolder === folderPath || currentFolder.startsWith(folderPath + '/')) {
         currentFolder = 'Inbox';
       }
@@ -324,7 +339,12 @@ function deleteFolder(folderPath) {
 function moveNoteToFolder(noteId, newFolder) {
   const note = allNotes.find(n => n.id === noteId);
   if (!note) return;
+  if (note.folder === newFolder) return;
+
   const updatedNote = { ...note, folder: newFolder };
+  if (window.AcademicNotes?.DB) {
+    window.AcademicNotes.DB.updateNote(noteId, { folder: newFolder }).catch(console.error);
+  }
   chrome.runtime.sendMessage({
     type: "UPDATE_NOTE",
     id: noteId,

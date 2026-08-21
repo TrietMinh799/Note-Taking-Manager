@@ -248,10 +248,13 @@ window.AcademicNotes.DB = (function() {
       const db = await init();
       const stmt = db.prepare('SELECT * FROM notes ORDER BY datetime(created_at) DESC');
       const notes = [];
-      while (stmt.step()) {
-        notes.push(rowToNote(stmt.getAsObject()));
+      try {
+        while (stmt.step()) {
+          notes.push(rowToNote(stmt.getAsObject()));
+        }
+      } finally {
+        stmt.free();
       }
-      stmt.free();
       return notes;
     },
 
@@ -261,10 +264,13 @@ window.AcademicNotes.DB = (function() {
       const stmt = db.prepare(sql);
       stmt.bind([folderPath, folderPath + '/%']);
       const notes = [];
-      while (stmt.step()) {
-        notes.push(rowToNote(stmt.getAsObject()));
+      try {
+        while (stmt.step()) {
+          notes.push(rowToNote(stmt.getAsObject()));
+        }
+      } finally {
+        stmt.free();
       }
-      stmt.free();
       return notes;
     },
 
@@ -376,11 +382,14 @@ window.AcademicNotes.DB = (function() {
           WHERE notes_fts MATCH ?
           ORDER BY rank
         `);
-        ftsStmt.bind([cleanQuery + '*']);
-        while (ftsStmt.step()) {
-          notes.push(rowToNote(ftsStmt.getAsObject()));
+        try {
+          ftsStmt.bind([cleanQuery + '*']);
+          while (ftsStmt.step()) {
+            notes.push(rowToNote(ftsStmt.getAsObject()));
+          }
+        } finally {
+          ftsStmt.free();
         }
-        ftsStmt.free();
         if (notes.length > 0) return notes;
       } catch (e) {
         // Fallback to LIKE if FTS query syntax error
@@ -393,11 +402,14 @@ window.AcademicNotes.DB = (function() {
         WHERE content LIKE ? OR title LIKE ? OR user_note LIKE ? OR tags LIKE ?
         ORDER BY datetime(created_at) DESC
       `);
-      stmt.bind([likePattern, likePattern, likePattern, likePattern]);
-      while (stmt.step()) {
-        notes.push(rowToNote(stmt.getAsObject()));
+      try {
+        stmt.bind([likePattern, likePattern, likePattern, likePattern]);
+        while (stmt.step()) {
+          notes.push(rowToNote(stmt.getAsObject()));
+        }
+      } finally {
+        stmt.free();
       }
-      stmt.free();
       return notes;
     },
 
@@ -405,10 +417,13 @@ window.AcademicNotes.DB = (function() {
       const db = await init();
       const stmt = db.prepare('SELECT name FROM folders ORDER BY name ASC');
       const folders = [];
-      while (stmt.step()) {
-        folders.push(stmt.getAsObject().name);
+      try {
+        while (stmt.step()) {
+          folders.push(stmt.getAsObject().name);
+        }
+      } finally {
+        stmt.free();
       }
-      stmt.free();
       if (!folders.includes('Inbox')) {
         folders.unshift('Inbox');
       }
