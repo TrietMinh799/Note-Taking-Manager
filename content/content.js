@@ -601,10 +601,62 @@
 
   // --- Metadata Extraction ---
   function extractMetadata() {
+    let currentUrl = window.location.href;
+    
+    // Check if inside PDF viewer or iframe with query params
+    try {
+      if (window.location.search) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const fileParam = urlParams.get('file') || urlParams.get('src') || urlParams.get('url');
+        if (fileParam && (fileParam.startsWith('http://') || fileParam.startsWith('https://') || fileParam.startsWith('file:///'))) {
+          currentUrl = decodeURIComponent(fileParam);
+        }
+      }
+    } catch(e) {}
+
+    // Check embedded or iframe elements
+    if (currentUrl.startsWith('chrome-extension://') || currentUrl.startsWith('edge-extension://') || currentUrl.startsWith('moz-extension://') || currentUrl.startsWith('extension://')) {
+      const match = currentUrl.match(/(https?:\/\/[^\s"'<>]+|file:\/\/\/[^\s"'<>]+)/i);
+      if (match) {
+        currentUrl = decodeURIComponent(match[1]);
+      } else {
+        const embed = document.querySelector('embed[src], iframe[src]');
+        if (embed && embed.src && !embed.src.startsWith('chrome-extension://') && !embed.src.startsWith('extension://')) {
+          currentUrl = embed.src;
+        } else {
+          try {
+            if (window.top && window.top.location && window.top.location.href) {
+              const topUrl = window.top.location.href;
+              if (topUrl && !topUrl.startsWith('chrome-extension://') && !topUrl.startsWith('extension://')) {
+                currentUrl = topUrl;
+              }
+            }
+          } catch(e) {}
+          if (currentUrl.startsWith('extension://') || currentUrl.startsWith('chrome-extension://')) {
+             if (document.referrer && (document.referrer.startsWith('http') || document.referrer.startsWith('file'))) {
+               currentUrl = document.referrer;
+             }
+          }
+        }
+      }
+    }
+
+    let currentDomain = '';
+    try {
+      if (currentUrl.startsWith('file:///')) {
+        currentDomain = 'Local PDF File';
+      } else {
+        currentDomain = new URL(currentUrl).hostname;
+      }
+    } catch (e) {
+      currentDomain = window.location.hostname || '';
+    }
+
     const meta = {
       title: document.title || '',
-      url: window.location.href,
-      domain: window.location.hostname,
+      url: currentUrl,
+      referrer: document.referrer || '',
+      domain: currentDomain,
       authors: [],
       doi: '',
       siteName: '',
@@ -672,17 +724,65 @@
             user-select: text !important;
             -webkit-user-select: text !important;
             -moz-user-select: text !important;
+            -ms-user-select: text !important;
             pointer-events: auto !important;
+          }
+          ::selection {
+            background-color: rgba(37, 99, 235, 0.4) !important;
+            color: inherit !important;
+          }
+          /* PDF.js / Academic PDF Text Layer specific overrides */
+          .textLayer, .textLayer > span, .textLayer > div, [class*="textLayer"], [class*="TextLayer"], [data-text-layer="true"] {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            user-select: text !important;
+            -webkit-user-select: text !important;
+            display: block !important;
+            visibility: visible !important;
+            cursor: text !important;
+            z-index: 999 !important;
+          }
+          .canvasWrapper, canvas {
+            pointer-events: auto !important;
+          }
+          /* Neutralize invisible shields/overlays blocking click & drag */
+          .protect-overlay, .shield, .no-copy, .disable-select, .watermark-shield, .copy-shield, [class*="shield"], [class*="unselectable"] {
+            pointer-events: none !important;
+            display: none !important;
           }
         `;
         document.head.appendChild(styleEl);
       }
+
+      // Neutralize inline handler attributes
+      try {
+        window.oncopy = null;
+        window.onselectstart = null;
+        window.oncontextmenu = null;
+        document.oncopy = null;
+        document.onselectstart = null;
+        document.oncontextmenu = null;
+        if (document.body) {
+          document.body.oncopy = null;
+          document.body.onselectstart = null;
+          document.body.oncontextmenu = null;
+        }
+      } catch (e) {}
+
+      // Strip inline user-select: none
+      try {
+        document.querySelectorAll('*').forEach(el => {
+          if (el.style && (el.style.userSelect === 'none' || el.style.webkitUserSelect === 'none')) {
+            el.style.userSelect = 'text';
+            el.style.webkitUserSelect = 'text';
+          }
+        });
+      } catch (e) {}
       
       // Add event blockers (capture phase)
       document.addEventListener('copy', preventBlockHandler, true);
       document.addEventListener('selectstart', preventBlockHandler, true);
       document.addEventListener('contextmenu', preventBlockHandler, true);
-      // don't broadly block mousedown, it might break regular interactions, just the ones blocking selection
       
       showUnlockIndicator(true);
     } else {

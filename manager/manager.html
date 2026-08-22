@@ -50,16 +50,22 @@
     <div id="notesContainer" class="notes-container"></div>
   </main>
   </div>
-  <footer class="export-toolbar">
-    <button id="exportSqliteBtn" style="background-color: var(--accent); color: white; font-weight: 600;">💾 Export SQLite (.db)</button>
-    <button id="exportMdBtn">Export MD</button>
-    <button id="exportAnkiBtn" title="Export as Anki Flashcards Deck (.tsv)">🎴 Export Anki</button>
-    <button id="exportBibtexBtn">Export BibTeX</button>
-    <button id="exportRisBtn">Export RIS</button>
-    <button id="exportEndnoteBtn">Export EndNote</button>
-    <button id="exportJsonBtn">Export JSON</button>
-    <button id="importJsonBtn">Import</button>
-    <input type="file" id="importFileInput" accept=".json,.db,.sqlite" class="hidden">
+  <footer class="export-toolbar" id="exportToolbar">
+    <div class="export-toolbar-header" id="exportToolbarToggle" title="Click to collapse/expand export options">
+      <span class="export-toggle-title">📦 Export & Backup Options</span>
+      <span class="export-toggle-arrow" id="exportToggleArrow">▼</span>
+    </div>
+    <div class="export-toolbar-content" id="exportToolbarContent">
+      <button id="exportSqliteBtn" style="background-color: var(--accent); color: white; font-weight: 600;">💾 Export SQLite (.db)</button>
+      <button id="exportMdBtn">Export MD</button>
+      <button id="exportAnkiBtn" title="Export as Anki Flashcards Deck (.tsv)">🎴 Export Anki</button>
+      <button id="exportBibtexBtn">Export BibTeX</button>
+      <button id="exportRisBtn">Export RIS</button>
+      <button id="exportEndnoteBtn">Export EndNote</button>
+      <button id="exportJsonBtn">Export JSON</button>
+      <button id="importJsonBtn">Import</button>
+      <input type="file" id="importFileInput" accept=".json,.db,.sqlite" class="hidden">
+    </div>
   </footer>
   
   <div id="toast" class="toast hidden"></div>

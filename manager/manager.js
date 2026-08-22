@@ -404,6 +404,8 @@ async function loadNotes() {
     try {
       allNotes = await window.AcademicNotes.DB.getAllNotes();
       allNotes.forEach(n => {
+        if (n.url) n.url = cleanPdfUrl(n.url);
+        if (n.pageUrl) n.pageUrl = cleanPdfUrl(n.pageUrl);
         n._searchTokens = `${n.content || ''} ${n.title || ''} ${n.userNote || ''} ${(n.tags || []).join(' ')}`.toLowerCase();
       });
       filteredNotes = [...allNotes];
@@ -426,6 +428,8 @@ async function loadNotes() {
           return dateB - dateA;
         });
         allNotes.forEach(n => {
+          if (n.url) n.url = cleanPdfUrl(n.url);
+          if (n.pageUrl) n.pageUrl = cleanPdfUrl(n.pageUrl);
           n._searchTokens = `${n.content || ''} ${n.title || ''} ${n.userNote || ''} ${(n.tags || []).join(' ')}`.toLowerCase();
         });
         filteredNotes = [...allNotes];
@@ -510,25 +514,42 @@ function createNoteCard(note) {
   // Title
   const titleLink = document.createElement('a');
   titleLink.className = 'note-title';
-  const noteUrl = note.url || note.pageUrl || note.metadata?.url || '#';
+  const cleanUrl = cleanPdfUrl(note.url || note.pageUrl || note.metadata?.url || '');
+  const noteUrl = cleanUrl || '#';
   titleLink.href = noteUrl;
   titleLink.target = '_blank';
   titleLink.rel = 'noopener noreferrer';
   titleLink.textContent = note.title || note.pageTitle || note.metadata?.title || 'Academic Snippet';
+
+  titleLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (cleanUrl && !isInternalExtensionUrl(cleanUrl)) {
+      chrome.tabs.create({ url: cleanUrl });
+    } else if (note.doi) {
+      chrome.tabs.create({ url: `https://doi.org/${note.doi.replace(/^doi:/i, '').trim()}` });
+    } else {
+      showToast('No direct source URL available. Click "Edit Note" (✏️) to set a source URL.');
+    }
+  });
+
   headerLeft.appendChild(titleLink);
 
   // Meta row (Domain, Folder, Authors, Date)
   const metaSub = document.createElement('div');
   metaSub.className = 'note-meta';
 
-  if (noteUrl && noteUrl !== '#') {
+  if (cleanUrl && !isInternalExtensionUrl(cleanUrl)) {
     try {
-      const url = new URL(noteUrl);
       const domainSpan = document.createElement('span');
       domainSpan.className = 'note-domain';
-      domainSpan.textContent = url.hostname;
+      domainSpan.textContent = cleanUrl.startsWith('file:///') ? 'Local PDF' : new URL(cleanUrl).hostname;
       metaSub.appendChild(domainSpan);
     } catch(e) {}
+  } else if (note.domain && !isInternalExtensionUrl(note.domain)) {
+    const domainSpan = document.createElement('span');
+    domainSpan.className = 'note-domain';
+    domainSpan.textContent = note.domain;
+    metaSub.appendChild(domainSpan);
   }
 
   // Folder Badge
@@ -795,12 +816,36 @@ function toggleEdit(card, note) {
   const form = document.createElement('div');
   form.className = 'edit-form';
 
+  // Title
+  const titleLabel = document.createElement('label');
+  titleLabel.textContent = 'Title:';
+  const titleInput = document.createElement('input');
+  titleInput.type = 'text';
+  titleInput.value = note.title || note.pageTitle || '';
+
+  // Source URL (Online link or Local file:///)
+  const urlLabel = document.createElement('label');
+  urlLabel.textContent = 'Source URL (Direct Online link or file:///):';
+  const urlInput = document.createElement('input');
+  urlInput.type = 'text';
+  urlInput.value = cleanPdfUrl(note.url || note.pageUrl || '');
+  urlInput.placeholder = 'https://arxiv.org/pdf/... or file:///...';
+
+  // Authors
+  const authorsLabel = document.createElement('label');
+  authorsLabel.textContent = 'Authors:';
+  const authorsInput = document.createElement('input');
+  authorsInput.type = 'text';
+  authorsInput.value = Array.isArray(note.authors) ? note.authors.join(', ') : (note.authors || '');
+
+  // User Note
   const userNoteLabel = document.createElement('label');
-  userNoteLabel.textContent = 'User Note:';
+  userNoteLabel.textContent = 'Personal Note:';
   const userNoteInput = document.createElement('textarea');
   userNoteInput.value = note.userNote || note.userNotes || '';
   userNoteInput.rows = 3;
 
+  // Tags
   const tagsLabel = document.createElement('label');
   tagsLabel.textContent = 'Tags (comma separated):';
   const tagsInput = document.createElement('input');
@@ -814,9 +859,24 @@ function toggleEdit(card, note) {
   saveBtn.className = 'primary';
   saveBtn.textContent = 'Save';
   saveBtn.onclick = () => {
+    const rawCleanUrl = cleanPdfUrl(urlInput.value.trim());
+    let newDomain = '';
+    if (rawCleanUrl.startsWith('file:///')) {
+      newDomain = 'Local PDF';
+    } else if (rawCleanUrl.startsWith('http')) {
+      try { newDomain = new URL(rawCleanUrl).hostname; } catch(e) {}
+    }
+
     const updatedNote = {
       ...note,
+      title: titleInput.value.trim() || note.title || 'Academic Note',
+      url: rawCleanUrl,
+      pageUrl: rawCleanUrl,
+      domain: newDomain || note.domain || '',
+      sourceDomain: newDomain || note.sourceDomain || '',
+      authors: authorsInput.value.trim(),
       userNote: userNoteInput.value,
+      userNotes: userNoteInput.value,
       tags: tagsInput.value.split(',').map(t => t.trim()).filter(t => t)
     };
     
@@ -826,7 +886,7 @@ function toggleEdit(card, note) {
       updates: updatedNote
     }, (res) => {
       if (res && res.success) {
-        showToast('Note updated');
+        showToast('Note updated successfully!');
         const index = allNotes.findIndex(n => n.id === note.id);
         if (index > -1) allNotes[index] = updatedNote;
         applyFilters();
@@ -842,7 +902,14 @@ function toggleEdit(card, note) {
   };
 
   actionsDiv.append(cancelBtn, saveBtn);
-  form.append(userNoteLabel, userNoteInput, tagsLabel, tagsInput, actionsDiv);
+  form.append(
+    titleLabel, titleInput,
+    urlLabel, urlInput,
+    authorsLabel, authorsInput,
+    userNoteLabel, userNoteInput,
+    tagsLabel, tagsInput,
+    actionsDiv
+  );
   card.appendChild(form);
 }
 
@@ -1096,6 +1163,23 @@ function setupEventListeners() {
     });
   }
 
+  // Collapsible Export Toolbar
+  const exportToolbar = document.getElementById('exportToolbar');
+  const exportToolbarToggle = document.getElementById('exportToolbarToggle');
+  if (exportToolbar && exportToolbarToggle) {
+    chrome.storage.local.get(['exportToolbarCollapsed'], (res) => {
+      if (res.exportToolbarCollapsed) {
+        exportToolbar.classList.add('collapsed');
+      }
+    });
+
+    exportToolbarToggle.addEventListener('click', () => {
+      exportToolbar.classList.toggle('collapsed');
+      const isCollapsed = exportToolbar.classList.contains('collapsed');
+      chrome.storage.local.set({ exportToolbarCollapsed: isCollapsed });
+    });
+  }
+
   // Exports
   const exportSqliteBtn = document.getElementById('exportSqliteBtn');
   if (exportSqliteBtn) {
@@ -1320,4 +1404,80 @@ async function copyRichText(note) {
   } catch (err) {
     copyToClipboard(plainText, 'Copied Plain Text!');
   }
+}
+
+function isInternalExtensionUrl(url) {
+  if (!url) return true;
+  const str = String(url).trim().toLowerCase();
+  return str.startsWith('chrome-extension://') ||
+         str.startsWith('edge-extension://') ||
+         str.startsWith('extension://') ||
+         str.startsWith('moz-extension://') ||
+         str.includes('mhjfbmdgcfjnhpaeojofohoefgiehjai') ||
+         str.includes('mhjfbmdgcfjbbpaeojofohoefgiehjai') ||
+         str.includes('edge_pdf') ||
+         str.includes('pdf_viewer') ||
+         str === '#' ||
+         str === 'about:blank';
+}
+
+function cleanPdfUrl(rawUrl, fallbackUrl = '') {
+  let candidate = (rawUrl || '').trim();
+  let fallback = (fallbackUrl || '').trim();
+
+  function extractEmbedded(str) {
+    if (!str) return null;
+    
+    // 1. Try URL parameters first (?src=..., ?file=..., ?url=...)
+    try {
+      if (str.includes('?')) {
+        const u = new URL(str, 'https://dummy.org');
+        for (const param of ['src', 'file', 'url', 'pdf', 'target', 'doc', 'document']) {
+          const val = u.searchParams.get(param);
+          if (val && (val.startsWith('http://') || val.startsWith('https://') || val.startsWith('file:///'))) {
+            return decodeURIComponent(val);
+          }
+        }
+      }
+    } catch (e) {}
+
+    // 2. Try regex match for embedded http://, https://, or file:///
+    const match = str.match(/(https?:\/\/[^\s"'<>]+|file:\/\/\/[^\s"'<>]+)/i);
+    if (match) {
+      let found = match[1];
+      if (found.includes('&') && !found.includes('?')) {
+        found = found.split('&')[0];
+      }
+      return decodeURIComponent(found);
+    }
+    return null;
+  }
+
+  // 1. If candidate is a normal web URL or file URL, return it
+  if (!isInternalExtensionUrl(candidate) && (candidate.startsWith('http://') || candidate.startsWith('https://') || candidate.startsWith('file:///'))) {
+    return candidate;
+  }
+
+  // 2. If candidate is an internal viewer URL, try extracting embedded target
+  if (candidate) {
+    const extracted = extractEmbedded(candidate);
+    if (extracted && !isInternalExtensionUrl(extracted)) {
+      return extracted;
+    }
+  }
+
+  // 3. Try fallbackUrl (tab.url)
+  if (fallback && !isInternalExtensionUrl(fallback) && (fallback.startsWith('http://') || fallback.startsWith('https://') || fallback.startsWith('file:///'))) {
+    return fallback;
+  }
+
+  if (fallback) {
+    const fallbackExtracted = extractEmbedded(fallback);
+    if (fallbackExtracted && !isInternalExtensionUrl(fallbackExtracted)) {
+      return fallbackExtracted;
+    }
+  }
+
+  // 4. Return whatever we have rather than empty string so user doesn't have to manually type
+  return candidate || fallback || '';
 }

@@ -689,13 +689,71 @@ main {
 .export-toolbar {
   background-color: var(--card-bg);
   border-top: 1px solid var(--border);
-  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+  flex-shrink: 0;
+  transition: all 0.25s ease;
+}
+
+.export-toolbar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 1rem;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background-color: var(--card-bg);
+  border-bottom: 1px solid transparent;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.export-toolbar-header:hover {
+  background-color: var(--tag-bg);
+  color: var(--text);
+}
+
+.export-toolbar:not(.collapsed) .export-toolbar-header {
+  border-bottom-color: var(--border);
+}
+
+.export-toggle-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.export-toggle-arrow {
+  font-size: 0.65rem;
+  transition: transform 0.25s ease;
+}
+
+.export-toolbar.collapsed .export-toggle-arrow {
+  transform: rotate(-180deg);
+}
+
+.export-toolbar-content {
+  padding: 0.6rem 1rem;
   display: flex;
   gap: 0.5rem;
   justify-content: center;
   flex-wrap: wrap;
-  z-index: 10;
-  box-shadow: 0 -1px 3px rgba(0,0,0,0.05);
+  overflow: hidden;
+  max-height: 200px;
+  opacity: 1;
+  transition: max-height 0.25s ease, padding 0.25s ease, opacity 0.2s ease;
+}
+
+.export-toolbar.collapsed .export-toolbar-content {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .export-toolbar button {

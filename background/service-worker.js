@@ -46,43 +46,169 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
     try {
       const selectionText = info.selectionText;
-      if (!selectionText || !tab || !tab.id) return;
+      if (!selectionText || !tab) return;
       
-      const results = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: extractMetadata
-      });
+      let metadata = {};
+      try {
+        if (tab.id) {
+          const results = await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: extractMetadata
+          });
+          metadata = results[0]?.result || {};
+        }
+      } catch (scriptErr) {
+        console.warn('Metadata script execution bypassed (common on native PDF tabs):', scriptErr);
+      }
+
+      // Clean PDF URLs using tabUrl and context menu info
+      let tabUrl = tab.url || tab.pendingUrl || '';
+      if (!tabUrl && tab.id) {
+        try {
+          const fullTab = await chrome.tabs.get(tab.id);
+          tabUrl = fullTab.url || fullTab.pendingUrl || '';
+        } catch(e) {}
+      }
+
+      // info.pageUrl is often the REAL url of the PDF in the browser address bar!
+      let contextUrl = info.pageUrl || info.frameUrl || '';
+      if (contextUrl && (contextUrl.startsWith('chrome-extension://') || contextUrl.startsWith('extension://'))) {
+          // If contextUrl is the extension, maybe frameUrl is better, or vice versa
+          if (info.frameUrl && !info.frameUrl.startsWith('chrome-extension://') && !info.frameUrl.startsWith('extension://')) {
+             contextUrl = info.frameUrl;
+          }
+      }
+
+      // Try all available sources to find the real URL
+      const rawUrl = metadata.url || contextUrl || tabUrl || '';
       
-      const metadata = results[0]?.result || {};
+      // We pass BOTH tabUrl and contextUrl to cleanPdfUrl to increase chances of finding the real URL
+      let cleanUrl = cleanPdfUrl(rawUrl, tabUrl);
+      if (!cleanUrl || isInternalExtensionUrl(cleanUrl)) {
+         const cleanContext = cleanPdfUrl(contextUrl, contextUrl);
+         if (cleanContext && !isInternalExtensionUrl(cleanContext)) {
+             cleanUrl = cleanContext;
+         }
+      }
+
+      // Robust fallback for PDF documents and protected pages
+      let fallbackTitle = tab.title || 'Academic PDF Document';
+      if (fallbackTitle.toLowerCase().endsWith('.pdf')) {
+        fallbackTitle = fallbackTitle.replace(/\.pdf$/i, '');
+      }
+      let fallbackDomain = '';
+      try {
+        if (cleanUrl) fallbackDomain = new URL(cleanUrl).hostname;
+        else if (tabUrl) fallbackDomain = new URL(tabUrl).hostname;
+      } catch (e) {}
       
       const note = {
         id: crypto.randomUUID(),
         content: selectionText,
-        title: metadata.title || '',
-        url: metadata.url || tab.url || '',
+        title: metadata.title || fallbackTitle,
+        url: cleanUrl,
+        pageUrl: cleanUrl,
         authors: metadata.authors || '',
         doi: metadata.doi || '',
-        domain: metadata.domain || '',
+        domain: metadata.domain || fallbackDomain || 'PDF Document',
         createdAt: new Date().toISOString(),
         tags: [],
         folder: 'Inbox'
       };
       
-      await saveNote(note);
+      await saveNote(note, tabUrl);
       
       try {
-        await chrome.tabs.sendMessage(tab.id, {
-          type: 'SHOW_TOAST',
-          message: 'Saved to Academic Notes'
-        });
+        if (tab.id) {
+          await chrome.tabs.sendMessage(tab.id, {
+            type: 'SHOW_TOAST',
+            message: 'Saved to Academic Notes'
+          });
+        }
       } catch (e) {
-        // Content script might not be injected, ignore
+        // Content script might not be injected on native PDF tabs, ignore
       }
     } catch (error) {
       console.error('Error handling context menu click:', error);
     }
   }
 });
+
+function isInternalExtensionUrl(url) {
+  if (!url) return true;
+  const str = String(url).trim().toLowerCase();
+  return str.startsWith('chrome-extension://') ||
+         str.startsWith('edge-extension://') ||
+         str.startsWith('extension://') ||
+         str.startsWith('moz-extension://') ||
+         str.includes('mhjfbmdgcfjnhpaeojofohoefgiehjai') ||
+         str.includes('mhjfbmdgcfjbbpaeojofohoefgiehjai') ||
+         str.includes('edge_pdf') ||
+         str.includes('pdf_viewer') ||
+         str === '#' ||
+         str === 'about:blank';
+}
+
+function cleanPdfUrl(rawUrl, fallbackUrl = '') {
+  let candidate = (rawUrl || '').trim();
+  let fallback = (fallbackUrl || '').trim();
+
+  function extractEmbedded(str) {
+    if (!str) return null;
+    
+    // 1. Try URL parameters first (?src=..., ?file=..., ?url=...)
+    try {
+      if (str.includes('?')) {
+        const u = new URL(str, 'https://dummy.org');
+        for (const param of ['src', 'file', 'url', 'pdf', 'target', 'doc', 'document']) {
+          const val = u.searchParams.get(param);
+          if (val && (val.startsWith('http://') || val.startsWith('https://') || val.startsWith('file:///'))) {
+            return decodeURIComponent(val);
+          }
+        }
+      }
+    } catch (e) {}
+
+    // 2. Try regex match for embedded http://, https://, or file:///
+    const match = str.match(/(https?:\/\/[^\s"'<>]+|file:\/\/\/[^\s"'<>]+)/i);
+    if (match) {
+      let found = match[1];
+      if (found.includes('&') && !found.includes('?')) {
+        found = found.split('&')[0];
+      }
+      return decodeURIComponent(found);
+    }
+    return null;
+  }
+
+  // 1. If candidate is a normal web URL or file URL, return it
+  if (!isInternalExtensionUrl(candidate) && (candidate.startsWith('http://') || candidate.startsWith('https://') || candidate.startsWith('file:///'))) {
+    return candidate;
+  }
+
+  // 2. If candidate is an internal viewer URL, try extracting embedded target
+  if (candidate) {
+    const extracted = extractEmbedded(candidate);
+    if (extracted && !isInternalExtensionUrl(extracted)) {
+      return extracted;
+    }
+  }
+
+  // 3. Try fallbackUrl (tab.url)
+  if (fallback && !isInternalExtensionUrl(fallback) && (fallback.startsWith('http://') || fallback.startsWith('https://') || fallback.startsWith('file:///'))) {
+    return fallback;
+  }
+
+  if (fallback) {
+    const fallbackExtracted = extractEmbedded(fallback);
+    if (fallbackExtracted && !isInternalExtensionUrl(fallbackExtracted)) {
+      return fallbackExtracted;
+    }
+  }
+
+  // 4. Return whatever we have rather than empty string so user doesn't have to manually type
+  return candidate || fallback || '';
+}
 
 function extractMetadata() {
   // Executed in the context of the page
@@ -128,8 +254,52 @@ async function getFolders() {
   return data.academic_folders || ['Inbox'];
 }
 
-async function saveNote(note) {
+async function saveNote(note, fallbackTabUrl = '') {
+  if (!note) return null;
+  if (!note.id) note.id = crypto.randomUUID();
   if (!note.folder) note.folder = 'Inbox';
+  if (!note.content && note.text) note.content = note.text;
+  if (!note.createdAt) note.createdAt = note.timestamp || new Date().toISOString();
+
+  // Normalize and clean URL for both online and offline sources
+  const rawUrl = note.url || note.pageUrl || note.metadata?.url || fallbackTabUrl || '';
+  const cleanUrl = cleanPdfUrl(rawUrl, fallbackTabUrl);
+  note.url = cleanUrl;
+  note.pageUrl = cleanUrl;
+
+  // Normalize Domain
+  if (cleanUrl) {
+    if (cleanUrl.startsWith('file:///')) {
+      note.domain = 'Local PDF File';
+      note.sourceDomain = 'Local PDF File';
+    } else {
+      try {
+        note.domain = new URL(cleanUrl).hostname;
+        note.sourceDomain = note.domain;
+      } catch (e) {
+        note.domain = 'PDF Document';
+        note.sourceDomain = note.domain;
+      }
+    }
+  } else {
+    note.domain = 'PDF Document';
+    note.sourceDomain = 'PDF Document';
+  }
+
+  // Normalize Title
+  if (!note.title && note.pageTitle) note.title = note.pageTitle;
+  if (!note.title && note.metadata?.title) note.title = note.metadata.title;
+  if (!note.title || note.title === 'Academic Document' || note.title === 'Academic PDF Document') {
+    if (cleanUrl) {
+      try {
+        const pathPart = cleanUrl.split('/').pop().split('?')[0];
+        const decoded = decodeURIComponent(pathPart).replace(/\.pdf$/i, '');
+        if (decoded) note.title = decoded;
+      } catch (e) {}
+    }
+    if (!note.title) note.title = 'Academic Note';
+  }
+
   const notes = await getNotes();
   notes.unshift(note);
   await chrome.storage.local.set({ 'academic_notes': notes });
@@ -267,7 +437,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'SAVE_NOTE') {
     (async () => {
       try {
-        const note = await saveNote(request.data);
+        let tabUrl = '';
+        try {
+          const activeTabs = await chrome.tabs.query({ active: true, currentWindow: true });
+          if (activeTabs && activeTabs.length > 0) {
+            tabUrl = activeTabs[0].url || activeTabs[0].pendingUrl || '';
+          }
+        } catch (e) {}
+        
+        if (!tabUrl && sender && sender.tab) {
+           tabUrl = sender.tab.url || sender.tab.pendingUrl || '';
+        }
+        
+        const note = await saveNote(request.data, tabUrl);
 
         // Auto open Side Panel on note save
         try {
@@ -514,35 +696,77 @@ chrome.commands.onCommand.addListener(async (command) => {
       if (tabs.length === 0) return;
       const tab = tabs[0];
       
-      const results = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: () => window.getSelection().toString()
-      });
+      let selectionText = '';
+      try {
+        const results = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => window.getSelection().toString()
+        });
+        selectionText = results[0]?.result || '';
+      } catch (e) {
+        console.warn('Direct selection script failed:', e);
+      }
       
-      const selectionText = results[0]?.result;
       if (!selectionText) return;
       
-      const metaResults = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: extractMetadata
-      });
+      let metadata = {};
+      try {
+        const metaResults = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: extractMetadata
+        });
+        metadata = metaResults[0]?.result || {};
+      } catch (e) {
+        console.warn('Metadata script execution failed:', e);
+      }
+
+      let tabUrl = tab.url || tab.pendingUrl || '';
       
-      const metadata = metaResults[0]?.result || {};
+      // Try to get real url via executeScript just in case
+      let contextUrl = '';
+      try {
+        const urlResults = await chrome.scripting.executeScript({
+           target: { tabId: tab.id },
+           func: () => window.location.href || document.referrer || ''
+        });
+        contextUrl = urlResults[0]?.result || '';
+      } catch (e) {}
+
+      const rawUrl = metadata.url || contextUrl || tabUrl || '';
+      let cleanUrl = cleanPdfUrl(rawUrl, tabUrl);
+      
+      if (!cleanUrl || isInternalExtensionUrl(cleanUrl)) {
+         const cleanContext = cleanPdfUrl(contextUrl, contextUrl);
+         if (cleanContext && !isInternalExtensionUrl(cleanContext)) {
+             cleanUrl = cleanContext;
+         }
+      }
+
+      let fallbackTitle = tab.title || 'Academic PDF Document';
+      if (fallbackTitle.toLowerCase().endsWith('.pdf')) {
+        fallbackTitle = fallbackTitle.replace(/\.pdf$/i, '');
+      }
+      let fallbackDomain = '';
+      try {
+        if (cleanUrl) fallbackDomain = new URL(cleanUrl).hostname;
+        else if (tabUrl) fallbackDomain = new URL(tabUrl).hostname;
+      } catch (e) {}
       
       const note = {
         id: crypto.randomUUID(),
         content: selectionText,
-        title: metadata.title || '',
-        url: metadata.url || tab.url || '',
+        title: metadata.title || fallbackTitle,
+        url: cleanUrl,
+        pageUrl: cleanUrl,
         authors: metadata.authors || '',
         doi: metadata.doi || '',
-        domain: metadata.domain || '',
+        domain: metadata.domain || fallbackDomain || 'PDF Document',
         createdAt: new Date().toISOString(),
         tags: [],
         folder: 'Inbox'
       };
       
-      await saveNote(note);
+      await saveNote(note, tabUrl);
 
       try {
         if (typeof chrome.sidePanel !== 'undefined' && typeof chrome.sidePanel.open === 'function' && tab.windowId) {
