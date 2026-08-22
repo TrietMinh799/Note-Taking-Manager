@@ -473,9 +473,9 @@ main {
   padding: 0.5rem 1rem;
   background-color: var(--bg);
   border-left: 3px solid var(--border);
-  font-style: italic;
   font-size: 1rem;
   white-space: pre-wrap;
+  line-height: 1.5;
 }
 
 .note-meta {

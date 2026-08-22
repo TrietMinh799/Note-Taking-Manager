@@ -474,16 +474,14 @@ function renderNotes(notes) {
 
 function format50Words(text) {
   if (!text) return '';
-  // O(1) performance optimization for very long text
-  const previewChunk = text.slice(0, 1500).trim();
-  const words = previewChunk.split(/\s+/);
-  if (words.length > 50) {
-    return words.slice(0, 50).join(' ') + '...';
+  if (text.length <= 400) return text.trim();
+  
+  let truncated = text.slice(0, 400);
+  const lastSpace = truncated.lastIndexOf(' ');
+  if (lastSpace > 300) {
+    truncated = truncated.slice(0, lastSpace);
   }
-  if (text.length > 1500) {
-    return words.join(' ') + '...';
-  }
-  return text.trim();
+  return truncated + '...';
 }
 
 function createNoteCard(note) {
@@ -733,6 +731,7 @@ function createNoteCard(note) {
   divider2.className = 'kebab-divider';
   kebabDropdown.appendChild(divider2);
 
+  addItem('📄', 'View Details', () => showFullNoteModal(note));
   addItem('✏️', 'Edit Note', () => toggleEdit(card, note));
   addItem('🗑️', 'Delete Note', () => confirmDelete(card, note.id), true);
 
@@ -751,13 +750,41 @@ function createNoteCard(note) {
 
   card.appendChild(headerRow);
 
-  // Snippet preview (50 words max + ellipsis)
+  // Snippet preview with Read More toggle
   const rawSnippet = note.content || note.text || '';
   const snippetQuote = document.createElement('blockquote');
   snippetQuote.className = 'note-snippet';
-  snippetQuote.textContent = format50Words(rawSnippet);
-  if (rawSnippet.trim().split(/\s+/).length > 50) {
-    snippetQuote.title = 'Full snippet:\n' + rawSnippet;
+  
+  if (rawSnippet.length > 400) {
+    const preview = format50Words(rawSnippet);
+    snippetQuote.textContent = preview;
+    
+    const readMore = document.createElement('span');
+    readMore.className = 'read-more-btn';
+    readMore.textContent = ' Read more...';
+    readMore.style.color = 'var(--primary)';
+    readMore.style.cursor = 'pointer';
+    readMore.style.fontSize = '0.9em';
+    readMore.style.fontWeight = '600';
+    readMore.style.marginLeft = '8px';
+    
+    let isExpanded = false;
+    readMore.addEventListener('click', (e) => {
+       e.stopPropagation();
+       isExpanded = !isExpanded;
+       if (isExpanded) {
+           snippetQuote.textContent = rawSnippet;
+           readMore.textContent = ' Show less';
+       } else {
+           snippetQuote.textContent = preview;
+           readMore.textContent = ' Read more...';
+       }
+       snippetQuote.appendChild(readMore);
+    });
+    
+    snippetQuote.appendChild(readMore);
+  } else {
+    snippetQuote.textContent = rawSnippet;
   }
   card.appendChild(snippetQuote);
 
@@ -1481,3 +1508,93 @@ function cleanPdfUrl(rawUrl, fallbackUrl = '') {
   // 4. Return whatever we have rather than empty string so user doesn't have to manually type
   return candidate || fallback || '';
 }
+
+function showFullNoteModal(note) {
+  let modal = document.getElementById('fullNoteModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'fullNoteModal';
+    modal.className = 'modal-overlay hidden';
+    modal.innerHTML = `
+      <div class="modal-content" style="max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-header">
+          <h2 id="fullNoteTitle" style="margin: 0; font-size: 1.25rem;"></h2>
+          <div class="modal-actions">
+            <button class="btn btn-cancel" id="closeFullNoteBtn">Close</button>
+          </div>
+        </div>
+        <div class="modal-body" style="padding: 1rem 0;">
+          <div style="margin-bottom: 1rem; color: var(--text-light); font-size: 0.9em;">
+             <span id="fullNoteAuthors"></span> | <span id="fullNoteDate"></span>
+          </div>
+          <div style="margin-bottom: 1rem;">
+             <a id="fullNoteLink" href="#" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: 500;"></a>
+          </div>
+          <blockquote id="fullNoteContent" class="note-snippet" style="font-size: 1.1rem; line-height: 1.6; white-space: pre-wrap; margin-bottom: 1.5rem;"></blockquote>
+          
+          <div id="fullNoteUserSection" style="display: none; background: var(--bg); padding: 1rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1rem;">
+            <strong style="display: block; margin-bottom: 0.5rem;">My Notes:</strong>
+            <div id="fullNoteUserContent" style="white-space: pre-wrap;"></div>
+          </div>
+          
+          <div id="fullNoteTags" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    
+    document.getElementById('closeFullNoteBtn').addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.classList.add('hidden');
+    });
+  }
+
+  // Populate data
+  document.getElementById('fullNoteTitle').textContent = note.title || 'Untitled Note';
+  
+  const authors = note.authors || note.metadata?.authors || '';
+  document.getElementById('fullNoteAuthors').textContent = Array.isArray(authors) ? authors.join(', ') : authors;
+  
+  const dateVal = note.date || note.createdAt || note.timestamp;
+  document.getElementById('fullNoteDate').textContent = dateVal ? new Date(dateVal).toLocaleString() : '';
+  
+  const cleanUrl = cleanPdfUrl(note.url || note.pageUrl || '');
+  const linkEl = document.getElementById('fullNoteLink');
+  if (cleanUrl) {
+    linkEl.textContent = '🔗 ' + cleanUrl;
+    linkEl.href = '#';
+    linkEl.onclick = (e) => {
+      e.preventDefault();
+      chrome.tabs.create({ url: cleanUrl });
+    };
+    linkEl.style.display = 'block';
+  } else {
+    linkEl.style.display = 'none';
+  }
+  
+  document.getElementById('fullNoteContent').textContent = note.content || note.text || '';
+  
+  const userSection = document.getElementById('fullNoteUserSection');
+  if (note.userNote || note.userNotes) {
+    document.getElementById('fullNoteUserContent').textContent = note.userNote || note.userNotes;
+    userSection.style.display = 'block';
+  } else {
+    userSection.style.display = 'none';
+  }
+  
+  const tagsContainer = document.getElementById('fullNoteTags');
+  tagsContainer.innerHTML = '';
+  if (note.tags && note.tags.length > 0) {
+    note.tags.forEach(tag => {
+      const span = document.createElement('span');
+      span.className = 'tag-pill';
+      span.textContent = '#' + tag;
+      tagsContainer.appendChild(span);
+    });
+  }
+
+  modal.classList.remove('hidden');
+}
+
