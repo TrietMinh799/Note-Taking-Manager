@@ -1,10 +1,14 @@
-// A. Context Menu Setup
 chrome.runtime.onInstalled.addListener(async () => {
   try {
     chrome.contextMenus.create({
       id: 'save-snippet',
       title: 'Save to Academic Notes',
       contexts: ['selection']
+    });
+    chrome.contextMenus.create({
+      id: 'capture-area',
+      title: 'Capture Area to Academic Notes',
+      contexts: ['page', 'image']
     });
     await updateBadge();
   } catch (error) {
@@ -130,6 +134,10 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       }
     } catch (error) {
       console.error('Error handling context menu click:', error);
+    }
+  } else if (info.menuItemId === 'capture-area') {
+    if (tab && tab.id) {
+      chrome.tabs.sendMessage(tab.id, { type: 'START_AREA_CAPTURE' }).catch(console.error);
     }
   }
 });
@@ -680,6 +688,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       try {
         const notes = await getNotes();
         sendResponse({ success: true, count: notes.length });
+      } catch (error) {
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+    return true;
+  }
+  
+  if (request.type === 'CAPTURE_VISIBLE_TAB') {
+    (async () => {
+      try {
+        const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'png' });
+        sendResponse({ success: true, dataUrl });
       } catch (error) {
         sendResponse({ success: false, error: error.message });
       }

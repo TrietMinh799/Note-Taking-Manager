@@ -31,3 +31,19 @@
         transform: translate(-50%, 0);
     }
 }
+
+.academic-notes-capture-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 2147483647;
+    cursor: crosshair;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.academic-notes-capture-selection {
+    position: fixed;
+    border: 2px dashed #4f46e5;
+    background: rgba(79, 70, 229, 0.2);
+    pointer-events: none;
+    z-index: 2147483647;
+}

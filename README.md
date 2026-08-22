@@ -80,6 +80,16 @@
 - **Full-Text Search & Multi-Filters**: Filter notes instantly by keyword, tags, source domains, or folders.
 - **Dark & Light Modes**: Matches your system theme or toggles manually with persistent preference.
 
+### 📄 8. Native PDF Integration & Reader
+- Built-in, high-performance Mozilla PDF.js viewer integrated directly within the extension.
+- **Offline & Online PDFs**: Open local PDFs from your hard drive or seamlessly transition online PDFs directly into the viewer with a single click from the extension popup.
+- **Full Highlighting Support**: The floating Quick-Save menu works natively inside the PDF viewer, allowing you to highlight and save text seamlessly without leaving the document.
+
+### 🖼️ 9. Image & Chart Area Capture
+- **Right-Click Screenshot Tool**: Need a specific chart, figure, or mathematical formula? Just Right-Click → "Capture Area to Academic Notes".
+- **Interactive Drag-to-Crop**: The screen dims, providing a precision crosshair to drag and crop any visual element.
+- **Visual Note Cards**: Captured images are stored natively inside the SQLite database and rendered elegantly on your note cards in the Notes Manager.
+
 ---
 
 ## 🚀 Installation & Setup
@@ -155,14 +165,14 @@ NoteTakingExtension/
 │   ├── icon-48.png
 │   └── icon-128.png
 ├── background/
-│   └── service-worker.js      # Background worker (storage, sync, context menus, commands)
+│   └── service-worker.js      # Background worker (storage, sync, context menus, screen capture)
 ├── content/
-│   ├── content.js             # Injected script (selection detection, floating UI, unlocker)
-│   └── content.css            # Content styles & unlock badge
+│   ├── content.js             # Injected script (selection detection, floating UI, image crop)
+│   └── content.css            # Content styles, unlock badge, and screen capture overlay
 ├── popup/
 │   ├── popup.html             # Extension action popup
 │   ├── popup.css              # Compact popup styling
-│   └── popup.js               # Quick stats, unlock toggle, and recent notes
+│   └── popup.js               # Quick stats, unlock toggle, and Open PDF Reader
 ├── manager/
 │   ├── manager.html           # Full Note Manager & Side Panel UI
 │   ├── manager.css            # Split-pane layout, dark mode, tree & card styles
@@ -171,6 +181,10 @@ NoteTakingExtension/
 │   ├── options.html           # Settings page (Obsidian vault configuration, data backup)
 │   ├── options.css            # Options page layout
 │   └── options.js             # Settings persistence & stats
+├── lib/
+│   ├── sql-wasm.wasm          # SQLite WebAssembly binary
+│   ├── sql-wasm.js            # SQLite WASM JS wrapper
+│   └── pdfjs/                 # Mozilla PDF.js offline viewer
 └── utils/
     ├── storage.js             # Async Chrome Storage wrappers & queries
     ├── metadata.js            # Academic meta-tag scraper & domain detection

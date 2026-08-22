@@ -35,6 +35,25 @@ async function initializePopup() {
     linkOptions.addEventListener('click', handleOpenOptions);
   }
 
+  const btnOpenPdf = document.getElementById('btn-open-pdf');
+  if (btnOpenPdf) {
+    btnOpenPdf.addEventListener('click', async () => {
+      try {
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        const currentTab = tabs[0];
+        let viewerUrl = chrome.runtime.getURL('lib/pdfjs/web/viewer.html');
+        if (currentTab && currentTab.url && currentTab.url.toLowerCase().includes('.pdf')) {
+          viewerUrl += '?file=' + encodeURIComponent(currentTab.url);
+        }
+        chrome.tabs.create({ url: viewerUrl });
+        window.close();
+      } catch (err) {
+        chrome.tabs.create({ url: chrome.runtime.getURL('lib/pdfjs/web/viewer.html') });
+        window.close();
+      }
+    });
+  }
+
   // Load state and data in parallel
   await Promise.all([
     loadNoteData(),

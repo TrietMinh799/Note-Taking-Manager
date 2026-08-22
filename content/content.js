@@ -410,11 +410,23 @@
     header.textContent = 'Save Snippet';
     modal.appendChild(header);
     
-    // Preview Text
-    const previewText = document.createElement('div');
-    previewText.className = 'preview-text';
-    previewText.textContent = selectedText.length > 200 ? selectedText.substring(0, 200) + '...' : selectedText;
-    modal.appendChild(previewText);
+    // Preview
+    if (capturedImageData) {
+      const imgPreview = document.createElement('img');
+      imgPreview.src = capturedImageData;
+      imgPreview.style.maxWidth = '100%';
+      imgPreview.style.maxHeight = '200px';
+      imgPreview.style.display = 'block';
+      imgPreview.style.margin = '0 auto 16px';
+      imgPreview.style.borderRadius = 'var(--radius)';
+      imgPreview.style.boxShadow = 'var(--shadow)';
+      modal.appendChild(imgPreview);
+    } else {
+      const previewText = document.createElement('div');
+      previewText.className = 'preview-text';
+      previewText.textContent = selectedText.length > 200 ? selectedText.substring(0, 200) + '...' : selectedText;
+      modal.appendChild(previewText);
+    }
     
     // Metadata preview
     const metaPreview = document.createElement('div');
@@ -534,6 +546,7 @@
         tags: tagsInput.value.split(',').map(t => t.trim()).filter(t => t),
         folder: folderSelect.value || 'Inbox',
         color: selectedColor,
+        image: capturedImageData,
         timestamp: new Date().toISOString()
       };
       
@@ -578,6 +591,7 @@
     overlay.classList.remove('open');
     setTimeout(() => {
       if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      capturedImageData = null;
     }, 200);
   }
 
@@ -814,6 +828,101 @@
     }
   }
 
+  // --- Image Capture ---
+  let capturedImageData = null;
+
+  function startAreaCapture() {
+    const overlay = document.createElement('div');
+    overlay.className = 'academic-notes-capture-overlay';
+    
+    const selection = document.createElement('div');
+    selection.className = 'academic-notes-capture-selection';
+    selection.style.display = 'none';
+    
+    document.body.appendChild(overlay);
+    document.body.appendChild(selection);
+
+    let startX, startY, isDrawing = false;
+
+    const onMouseDown = (e) => {
+      isDrawing = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      selection.style.left = startX + 'px';
+      selection.style.top = startY + 'px';
+      selection.style.width = '0px';
+      selection.style.height = '0px';
+      selection.style.display = 'block';
+    };
+
+    const onMouseMove = (e) => {
+      if (!isDrawing) return;
+      const currentX = e.clientX;
+      const currentY = e.clientY;
+      
+      const left = Math.min(startX, currentX);
+      const top = Math.min(startY, currentY);
+      const width = Math.abs(currentX - startX);
+      const height = Math.abs(currentY - startY);
+      
+      selection.style.left = left + 'px';
+      selection.style.top = top + 'px';
+      selection.style.width = width + 'px';
+      selection.style.height = height + 'px';
+    };
+
+    const onMouseUp = async (e) => {
+      if (!isDrawing) return;
+      isDrawing = false;
+      
+      const currentX = e.clientX;
+      const currentY = e.clientY;
+      const left = Math.min(startX, currentX);
+      const top = Math.min(startY, currentY);
+      const width = Math.abs(currentX - startX);
+      const height = Math.abs(currentY - startY);
+      
+      // Cleanup
+      overlay.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      document.body.removeChild(overlay);
+      document.body.removeChild(selection);
+      
+      if (width < 10 || height < 10) return; // Ignore accidental clicks
+      
+      // Ask background to capture tab
+      chrome.runtime.sendMessage({ type: 'CAPTURE_VISIBLE_TAB' }, (res) => {
+        if (res && res.success && res.dataUrl) {
+          cropAndSaveImage(res.dataUrl, left, top, width, height);
+        }
+      });
+    };
+
+    overlay.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  }
+
+  function cropAndSaveImage(dataUrl, x, y, width, height) {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const dpr = window.devicePixelRatio || 1;
+      
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, x * dpr, y * dpr, width * dpr, height * dpr, 0, 0, width * dpr, height * dpr);
+      
+      capturedImageData = canvas.toDataURL('image/png');
+      selectedText = "Image Captured"; // Placeholder text
+      showQuickSaveModal();
+    };
+    img.src = dataUrl;
+  }
+
   // --- Message Handling ---
   function setupMessageListeners() {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -821,6 +930,11 @@
         const active = message.enabled !== undefined ? message.enabled : (message.data ? message.data.active : true);
         toggleForceUnlock(active);
         sendResponse({ success: true, enabled: active });
+        return true;
+      }
+      if (message.type === 'START_AREA_CAPTURE') {
+        startAreaCapture();
+        sendResponse({ success: true });
         return true;
       }
     });

@@ -21,7 +21,8 @@
     {
       "resources": [
         "lib/sql-wasm.wasm",
-        "lib/sql-wasm.js"
+        "lib/sql-wasm.js",
+        "lib/pdfjs/*"
       ],
       "matches": [
         "<all_urls>"

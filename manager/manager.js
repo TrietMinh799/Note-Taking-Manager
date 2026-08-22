@@ -750,6 +750,19 @@ function createNoteCard(note) {
 
   card.appendChild(headerRow);
 
+  // Render Image if it exists
+  if (note.image) {
+    const imgEl = document.createElement('img');
+    imgEl.src = note.image;
+    imgEl.style.maxWidth = '100%';
+    imgEl.style.maxHeight = '300px';
+    imgEl.style.display = 'block';
+    imgEl.style.margin = '10px 0';
+    imgEl.style.borderRadius = 'var(--radius)';
+    imgEl.style.boxShadow = 'var(--shadow)';
+    card.appendChild(imgEl);
+  }
+
   // Snippet preview with Read More toggle
   const rawSnippet = note.content || note.text || '';
   const snippetQuote = document.createElement('blockquote');
@@ -1530,6 +1543,7 @@ function showFullNoteModal(note) {
           <div style="margin-bottom: 1rem;">
              <a id="fullNoteLink" href="#" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: 500;"></a>
           </div>
+          <img id="fullNoteImage" style="max-width: 100%; max-height: 400px; display: none; margin: 0 auto 1.5rem; border-radius: var(--radius); box-shadow: var(--shadow);" />
           <blockquote id="fullNoteContent" class="note-snippet" style="font-size: 1.1rem; line-height: 1.6; white-space: pre-wrap; margin-bottom: 1.5rem;"></blockquote>
           
           <div id="fullNoteUserSection" style="display: none; background: var(--bg); padding: 1rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1rem;">
@@ -1593,6 +1607,15 @@ function showFullNoteModal(note) {
       span.textContent = '#' + tag;
       tagsContainer.appendChild(span);
     });
+  }
+
+  const imgEl = document.getElementById('fullNoteImage');
+  if (note.image) {
+    imgEl.src = note.image;
+    imgEl.style.display = 'block';
+  } else {
+    imgEl.src = '';
+    imgEl.style.display = 'none';
   }
 
   modal.classList.remove('hidden');
